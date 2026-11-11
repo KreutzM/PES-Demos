@@ -13,6 +13,8 @@ Interaktive Einstiegssimulation für einen STM32F429 mit einem **explizit gewäh
 
 - Interaktiver STM32F429-RCC-Taktbaum mit SYSCLK, HPRE, PPRE1, PPRE2 und TIMPRE
 - TIM1 (16 Bit, APB2) und TIM2 (32 Bit, APB1): Timer-Takte dynamisch aus dem Clock-Tree berechnet
+- Fünfstufiger Frequenzpfad TIMxCLK → PSC → CNT → ARR → PWM mit Frequenzen und Zeitdauern
+- Interaktiver PSC-Innenteiler: +1 Eingangstakt, bis zum nächsten CNT-Tick springen und ÷4-Beispiel (PSC=3)
 - Register PSC, ARR und CCR2 sowie Frequenz und Duty-Cycle
 - Synchronisiertes Zeitdiagramm für CNT-Zähler, CCR2 und PWM Mode 1
 - Einzelschritt (+1 Tick), Sprung zur Compare-Schwelle, Überlauf, Start/Pause, Zeitraffer
@@ -20,6 +22,8 @@ Interaktive Einstiegssimulation für einen STM32F429 mit einem **explizit gewäh
 - Erklärung der momentanen LED-Aktivität gegenüber einer gemittelten Helligkeitsdarstellung
 - PWM-Polarität und konzeptioneller Bezug zu TIM1_CH2 / PE11 / DOT
 - HAL-Konfigurationsausschnitt und Unit-Tests
+
+**Warum PSC + 1?** Der Prescaler zählt von 0 bis PSC und erzeugt nach PSC + 1 Timer-Eingangstakten einen Zählschritt. Der CNT-Zähler zählt von 0 bis ARR und erzeugt nach ARR + 1 Zählschritten eine PWM-Periode. Im Labor kannst du die einzelnen Eingangstakte durchklicken (Voreinstellung „PSC = 3“). Der interne PSC-Wert gilt als bereits geladen; echte PSC-Schreibzugriffe werden erst mit dem Timer-Update-Ereignis wirksam (STM32F429 RM0090).
 
 **Wichtig:** Wiedergabe und Zeitraffer verwenden eine bewusst verlangsamte, von der echten Timer-Taktfrequenz unabhängige Lernzeit. Der Taktbaum geht von einer bereits korrekt konfigurierten Systemtaktquelle aus und modelliert weder PLL/Overdrive noch das Umschalten der RCC-Register zur Laufzeit. Der Timer-Kern ist eine didaktische Teilsimulation. Er bildet noch keine vollständige Peripherie ab; insbesondere Preload/Update-Events, Output-Enable (CCxE, MOE), kompletter Clock-Tree und GPIO-Multiplexing sind noch nicht simuliert. Der angezeigte C-Code ist kein vollständiges lauffähiges Firmwareprojekt.
 
