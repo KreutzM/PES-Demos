@@ -51,9 +51,6 @@ jobs:
         run: google-chrome --version
       - name: Browser tests and screenshots
         run: npm run test:e2e
-      - name: Publish JPEG previews in CI log
-        if: always()
-        run: node scripts/emit-visual-previews.mjs
       - name: Upload full-page screenshots
         if: always()
         uses: actions/upload-artifact@v4
