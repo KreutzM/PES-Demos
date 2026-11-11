@@ -23,11 +23,11 @@ export default defineConfig({
   projects: [
     {
       name: "desktop",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, locale: "de-DE" },
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 }, locale: "de-DE", channel: process.env.CI ? "chrome" : undefined },
     },
     {
       name: "mobile",
-      use: { ...devices["Pixel 7"], browserName: "chromium", locale: "de-DE" },
+      use: { ...devices["Pixel 7"], browserName: "chromium", locale: "de-DE", channel: process.env.CI ? "chrome" : undefined },
     },
   ],
   webServer: {
