@@ -277,3 +277,8 @@ button:disabled { opacity:.45; cursor:not-allowed; }
   .divider-phase-number { flex-direction:row; align-items:center; }
   .divider-phase-number strong { font-size:19px; }
 }
+
+/* Lighthouse accessibility fixes: contrast and non-color-only link cues */
+.upcoming .card-body p { color:#b0c2d2; }
+.wave-secondary { color:#abc0d0; }
+.site-footer a { text-decoration:underline; text-underline-offset:3px; }
