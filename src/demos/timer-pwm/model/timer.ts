@@ -1,6 +1,6 @@
-/** Vereinfachtes Upcounting-PWM-Modell für das Clock-Tree-Beispiel aus dem PES-Praktikum.
- * TIM1: APB2-Timerclock 168 MHz; TIM2: APB1-Timerclock 84 MHz.
- * Die Takte sind ein KONFIGURATIONSPROFIL, keine fest verdrahteten MCU-Eigenschaften.
+/** Vereinfachtes Upcounting-PWM-Modell für das PES-Praktikum.
+ * Die Timertakte werden von der RCC-Taktbaumkonfiguration abgeleitet.
+ * Die optionalen Standardwerte entsprechen dem Praktikumsprofil.
  */
 export type TimerId = "TIM1" | "TIM2";
 
@@ -31,8 +31,15 @@ export interface TimerResult {
   activeTicks: number;
 }
 
-export function calculateTimer(timer: TimerId, registers: TimerRegisters): TimerResult {
+export function calculateTimer(
+  timer: TimerId,
+  registers: TimerRegisters,
+  timerClockHz = TIMER_CLOCKS_HZ[timer],
+): TimerResult {
   const { psc, arr, ccr } = registers;
+  if (!Number.isFinite(timerClockHz) || timerClockHz <= 0) {
+    throw new RangeError("Der Timer-Eingangstakt muss positiv und endlich sein.");
+  }
   if (!Number.isInteger(psc) || psc < 0 || psc > PSC_MAX) {
     throw new RangeError("PSC muss eine ganze Zahl zwischen 0 und 65535 sein.");
   }
@@ -42,7 +49,6 @@ export function calculateTimer(timer: TimerId, registers: TimerRegisters): Timer
   if (!Number.isInteger(ccr) || ccr < 0 || ccr > arr + 1 || ccr > TIMER_ARR_MAX[timer]) {
     throw new RangeError("CCR muss zwischen 0 und min(ARR + 1, Registermaximum) liegen.");
   }
-  const timerClockHz = TIMER_CLOCKS_HZ[timer];
   const counterHz = timerClockHz / (psc + 1);
   const pwmHz = counterHz / (arr + 1);
   return {

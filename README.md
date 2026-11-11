@@ -11,7 +11,8 @@ https://kreutzm.github.io/PES-Demos/
 
 Interaktive Einstiegssimulation für einen STM32F429 mit einem **explizit gewählten Taktprofil**:
 
-- TIM1 (16 Bit), Timer-Takt 168 MHz und TIM2 (32 Bit), Timer-Takt 84 MHz
+- Interaktiver STM32F429-RCC-Taktbaum mit SYSCLK, HPRE, PPRE1, PPRE2 und TIMPRE
+- TIM1 (16 Bit, APB2) und TIM2 (32 Bit, APB1): Timer-Takte dynamisch aus dem Clock-Tree berechnet
 - Register PSC, ARR und CCR2 sowie Frequenz und Duty-Cycle
 - Synchronisiertes Zeitdiagramm für CNT-Zähler, CCR2 und PWM Mode 1
 - Einzelschritt (+1 Tick), Sprung zur Compare-Schwelle, Überlauf, Start/Pause, Zeitraffer
@@ -20,7 +21,7 @@ Interaktive Einstiegssimulation für einen STM32F429 mit einem **explizit gewäh
 - PWM-Polarität und konzeptioneller Bezug zu TIM1_CH2 / PE11 / DOT
 - HAL-Konfigurationsausschnitt und Unit-Tests
 
-**Wichtig:** Wiedergabe und Zeitraffer verwenden eine bewusst verlangsamte, von der echten Timer-Taktfrequenz unabhängige Lernzeit. Der Timer-Kern ist eine didaktische Teilsimulation. Er bildet noch keine vollständige Peripherie ab; insbesondere Preload/Update-Events, Output-Enable (CCxE, MOE), kompletter Clock-Tree und GPIO-Multiplexing sind noch nicht simuliert. Der angezeigte C-Code ist kein vollständiges lauffähiges Firmwareprojekt.
+**Wichtig:** Wiedergabe und Zeitraffer verwenden eine bewusst verlangsamte, von der echten Timer-Taktfrequenz unabhängige Lernzeit. Der Taktbaum geht von einer bereits korrekt konfigurierten Systemtaktquelle aus und modelliert weder PLL/Overdrive noch das Umschalten der RCC-Register zur Laufzeit. Der Timer-Kern ist eine didaktische Teilsimulation. Er bildet noch keine vollständige Peripherie ab; insbesondere Preload/Update-Events, Output-Enable (CCxE, MOE), kompletter Clock-Tree und GPIO-Multiplexing sind noch nicht simuliert. Der angezeigte C-Code ist kein vollständiges lauffähiges Firmwareprojekt.
 
 ## Lokal ausführen
 
