@@ -39,8 +39,8 @@ export function calculateTimer(timer: TimerId, registers: TimerRegisters): Timer
   if (!Number.isInteger(arr) || arr < 0 || arr > TIMER_ARR_MAX[timer]) {
     throw new RangeError("ARR ist außerhalb der Zählerbreite von " + timer + ".");
   }
-  if (!Number.isInteger(ccr) || ccr < 0 || ccr > arr + 1) {
-    throw new RangeError("CCR muss zwischen 0 und ARR + 1 liegen.");
+  if (!Number.isInteger(ccr) || ccr < 0 || ccr > arr + 1 || ccr > TIMER_ARR_MAX[timer]) {
+    throw new RangeError("CCR muss zwischen 0 und min(ARR + 1, Registermaximum) liegen.");
   }
   const timerClockHz = TIMER_CLOCKS_HZ[timer];
   const counterHz = timerClockHz / (psc + 1);
