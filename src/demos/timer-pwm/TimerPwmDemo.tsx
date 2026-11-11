@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import Waveform from "./components/Waveform";
+import ClockTree from "./components/ClockTree";
+import { calculateClockTree, DEFAULT_CLOCK_CONFIG, type ClockConfig } from "./model/clockTree";
 import {
   advanceCounter, calculateTimer, pwmActive, ticksUntilCompare, ticksUntilOverflow,
-  TIMER_ARR_MAX, TIMER_CLOCKS_HZ, type CounterState, type TimerId,
+  TIMER_ARR_MAX, type CounterState, type TimerId,
 } from "./model/timer";
 
 type Preset = "steps" | "blink" | "dim";
@@ -20,6 +22,7 @@ function formatPeriod(seconds: number): string {
 
 export default function TimerPwmDemo() {
   const [timer, setTimer] = useState<TimerId>("TIM1");
+  const [clockConfig, setClockConfig] = useState<ClockConfig>({ ...DEFAULT_CLOCK_CONFIG });
   const [psc, setPsc] = useState(16799);
   const [arr, setArr] = useState(9);
   const [ccr, setCcr] = useState(3);
@@ -39,13 +42,15 @@ export default function TimerPwmDemo() {
     return () => window.clearInterval(interval);
   }, [playing, playback, arr]);
 
+  const clock = calculateClockTree(clockConfig);
+  const timerClockHz = timer === "TIM1" ? clock.tim1Hz : clock.tim2Hz;
   const maxArr = TIMER_ARR_MAX[timer];
   const maxCcr = Math.min(arr + 1, maxArr);
 
   let result: ReturnType<typeof calculateTimer> | null = null;
   let error = "";
   try {
-    result = calculateTimer(timer, { psc, arr, ccr });
+    result = calculateTimer(timer, { psc, arr, ccr }, timerClockHz);
   } catch (cause) {
     error = cause instanceof Error ? cause.message : "Ungültige Timer-Konfiguration.";
   }
@@ -90,6 +95,7 @@ export default function TimerPwmDemo() {
   function applyPreset(preset: Preset) {
     resetCounter();
     setTimer("TIM1");
+    setClockConfig({ ...DEFAULT_CLOCK_CONFIG }); // Presets refer to the documented RCC example.
     if (preset === "steps") {
       setPsc(16799);
       setArr(9);
@@ -150,13 +156,13 @@ export default function TimerPwmDemo() {
           <h1>Timer &amp; <span className="accent">PWM</span></h1>
           <p className="lead">Sieh dem Zähler beim Arbeiten zu: Verändere Register, schalte Tick für Tick weiter und beobachte unmittelbar den PWM-Ausgang.</p>
         </div>
-        <span className="version-pill">Lernlabor · Version 0.2</span>
+        <span className="version-pill">Lernlabor · Version 0.3</span>
       </div>
 
       <div className="lesson-note" role="note">
-        <strong>Unser Clock-Tree-Beispiel:</strong> SYSCLK 168 MHz, APB1 42 MHz, APB2 84 MHz.
-        Daraus ergeben sich hier TIM2 = 84 MHz und TIM1 = 168 MHz. Die Werte sind ein
-        <strong> konfiguriertes Beispiel</strong>, keine unveränderlichen Eigenschaften des STM32F429.
+        <strong>Praktikumsprofil:</strong> SYSCLK 168 MHz, AHB ÷1, APB1 ÷4 und APB2 ÷2, TIMPRE = 0.
+        Die Timer erhalten ihren Eingangstakt aus dem RCC-Taktbaum, <strong>nicht automatisch aus SYSCLK</strong>.
+        Stelle unten andere Prescaler ein und beobachte die Auswirkung auf beide Timer.
       </div>
 
       <div className="learning-intro">
@@ -168,6 +174,9 @@ export default function TimerPwmDemo() {
           Nutze dann „+1 Tick“ und kontrolliere deine Vorhersage im Zeitdiagramm.</p>
         </div>
       </div>
+
+      <ClockTree config={clockConfig} clock={clock} activeTimer={timer} psc={psc} arr={arr}
+        onChange={(next) => { resetCounter(); setClockConfig(next); }} />
 
       <div className="demo-layout">
         <section className="panel controls-panel" aria-labelledby="settings-title">
@@ -277,7 +286,7 @@ export default function TimerPwmDemo() {
               <h2>Vom Timer-Takt zur PWM-Frequenz</h2>
             </div>
             <div className="metrics">
-              <div className="metric"><span>Timer-Eingang</span><strong>{(TIMER_CLOCKS_HZ[timer] / 1e6).toFixed(0)} <small>MHz</small></strong></div>
+              <div className="metric"><span>Timer-Eingang</span><strong>{(timerClockHz / 1e6).toLocaleString("de-DE", { maximumFractionDigits: 5 })} <small>MHz</small></strong></div>
               <div className="metric"><span>Zähltakt</span><strong>{result ? formatFrequency(result.counterHz) : "–"}</strong></div>
               <div className="metric featured"><span>PWM-Frequenz</span><strong>{result ? formatFrequency(result.pwmHz) : "–"}</strong></div>
               <div className="metric"><span>Periodendauer</span><strong>{result ? formatPeriod(result.periodSeconds) : "–"}</strong></div>
@@ -322,7 +331,7 @@ export default function TimerPwmDemo() {
           </section>
         </section>
       </div>
-      <p className="disclaimer">Modellgrenzen: idealisierter Upcounting-Betrieb mit PWM Mode 1 und sofort gültigen PSC-/ARR-/CCR-Werten nach Neustart. Register-Preload, Update-Events bei laufendem Timer, Output-Enable und das vollständige Pin-Multiplexing werden noch nicht dynamisch simuliert. Die Browser-Zeitrafferfunktion ist unabhängig von der realen Timer-Taktfrequenz.</p>
+      <p className="disclaimer">Taktbaum-Modellgrenzen: HSE/HSI/PLL-Generierung, Wechsel zur Laufzeit, Overdrive und Flash-Waitstates sind nicht simuliert. Modellgrenzen der Timer-Peripherie: idealisierter Upcounting-Betrieb mit PWM Mode 1 und sofort gültigen PSC-/ARR-/CCR-Werten nach Neustart. Register-Preload, Update-Events bei laufendem Timer, Output-Enable und das vollständige Pin-Multiplexing werden noch nicht dynamisch simuliert. Die Browser-Zeitrafferfunktion ist unabhängig von der realen Timer-Taktfrequenz.</p>
     </main>
   );
 }
