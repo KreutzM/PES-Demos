@@ -321,13 +321,13 @@ export default function TimerPwmDemo() {
             </div>
             <div className="led-pair">
               <div className="led-visual">
-                <div className="led-frame" aria-label={"LED momentan " + (pe11Connected && active ? "eingeschaltet" : "ausgeschaltet")}>
+                <div className="led-frame" role="img" aria-label={"LED momentan " + (pe11Connected && active ? "eingeschaltet" : "ausgeschaltet")}>
                   <span className="led" style={{ opacity: pe11Connected && active ? 1 : 0.12, boxShadow: pe11Connected && active ? "0 0 25px rgba(245,65,78,.75)" : "none" }}/>
                 </div>
                 <span>Momentan</span>
               </div>
               <div className="led-visual">
-                <div className="led-frame" aria-label="Vereinfachtes Modell der zeitlich gemittelten Helligkeit">
+                <div className="led-frame" role="img" aria-label="Vereinfachtes Modell der zeitlich gemittelten Helligkeit">
                   <span className="led" style={{ opacity: pe11Connected && result ? Math.max(0.12, result.duty) : 0.12, boxShadow: pe11Connected && result ? "0 0 " + (3 + 25 * result.duty) + "px rgba(245,65,78,.55)" : "none" }}/>
                 </div>
                 <span>Mittelwert</span>
