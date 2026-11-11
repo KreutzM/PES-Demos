@@ -54,3 +54,50 @@ export function calculateTimer(timer: TimerId, registers: TimerRegisters): Timer
     activeTicks: ccr,
   };
 }
+
+/** Zustandsmodell für das Zählwerk. Die simulierte Zeitbasis ist ein CNT-Tick,
+ * nicht ein Browserframe oder ein Systemtaktzyklus. */
+export interface CounterState {
+  cnt: number;
+  overflows: number;
+}
+
+/** Zustand des internen PWM1-Referenzsignals (OCxREF), vor der Ausgangspolarität. */
+export function pwmActive(cnt: number, ccr: number): boolean {
+  return cnt < ccr;
+}
+
+/** Überspringt beliebig viele CNT-Ticks, ohne jeden Tick einzeln auszuführen. */
+export function advanceCounter(state: CounterState, arr: number, ticks: number): CounterState {
+  if (!Number.isSafeInteger(arr) || arr < 0 || !Number.isSafeInteger(state.cnt) ||
+      state.cnt < 0 || state.cnt > arr || !Number.isSafeInteger(ticks) || ticks < 0 ||
+      !Number.isSafeInteger(state.overflows) || state.overflows < 0) {
+    throw new RangeError("Ungültiger Zählerzustand oder Tickanzahl.");
+  }
+  const period = arr + 1;
+  const total = state.cnt + ticks;
+  const overflows = state.overflows + Math.floor(total / period);
+  if (!Number.isSafeInteger(overflows)) {
+    throw new RangeError("Überlaufzähler außerhalb des sicheren Zahlenbereichs.");
+  }
+  return { cnt: total % period, overflows };
+}
+
+/** Anzahl weiterer Ticks bis zum nächsten automatischen Rücksprung auf CNT=0. */
+export function ticksUntilOverflow(cnt: number, arr: number): number {
+  if (!Number.isSafeInteger(cnt) || !Number.isSafeInteger(arr) || arr < 0 || cnt < 0 || cnt > arr) {
+    throw new RangeError("Ungültiger Zählerstand.");
+  }
+  return arr + 1 - cnt;
+}
+
+/** Anzahl weiterer Ticks bis CNT=CCR (PWM1 wechselt dort in den inaktiven Zustand).
+ * Bei CCR=0 bzw. CCR>ARR existiert kein solcher Flankenwechsel. */
+export function ticksUntilCompare(cnt: number, arr: number, ccr: number): number | null {
+  if (!Number.isSafeInteger(cnt) || !Number.isSafeInteger(arr) || !Number.isSafeInteger(ccr) ||
+      arr < 0 || cnt < 0 || cnt > arr || ccr < 0 || ccr > arr + 1) {
+    throw new RangeError("Ungültiger Compare-Zustand.");
+  }
+  if (ccr === 0 || ccr > arr) return null;
+  return ccr > cnt ? ccr - cnt : arr + 1 - cnt + ccr;
+}

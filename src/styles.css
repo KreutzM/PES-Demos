@@ -99,3 +99,55 @@ a.demo-card:hover { border-color: #5bd7c6; transform: translateY(-3px); }
 .disclaimer { margin-top: 25px; line-height: 1.6; font-size: 12px; color: #8da2b5; }
 @media (max-width: 850px) { .demo-layout { grid-template-columns: 1fr; } .controls-panel { order: 0; } .output-column { order: 1; } .demo-heading { align-items: start; flex-direction: column; } }
 @media (max-width: 650px) { .container { width: min(100% - 26px,1120px); } .nav { min-height: 66px; } .nav nav { gap: 11px; font-size: 12px; } .hero { padding: 74px 0; } .cards { grid-template-columns: 1fr; } .section-heading { align-items: start; flex-direction: column; } .panel { padding: 18px; } .metrics { gap: 8px; } .metric { padding: 13px; } .wave-secondary { display: block; } }
+
+/* Timer-Labor: synchronisierte Simulation und Lernführung */
+.learning-intro { display:flex; align-items:flex-start; gap:18px; margin:0 0 22px; padding:20px 24px; border:1px solid #2e5d61; border-radius:15px; background:linear-gradient(135deg,#12333c,#102335); }
+.learning-intro .intro-icon { flex:0 0 45px; width:45px; height:45px; display:grid; place-items:center; background:#205458; color:#7ff1dd; border-radius:12px; font-size:16px; font-weight:750; }
+.learning-intro h2 { font-size:17px; margin:1px 0 8px; }
+.learning-intro p { color:#aec2d2; font-size:13px; line-height:1.7; margin:0; }
+.counter-display { display:flex; justify-content:space-between; align-items:end; gap:14px; padding:20px; border-radius:12px; background:#081827; border:1px solid #345263; }
+.counter-label { display:block; color:#74dccc; font-size:12px; font-weight:800; letter-spacing:1.5px; }
+.counter-number { display:block; font-size:clamp(36px,4.6vw,57px); font-variant-numeric:tabular-nums; line-height:1.25; letter-spacing:-2px; overflow-wrap:anywhere; }
+.counter-limits { display:block; color:#829cb1; font-size:12px; }
+.counter-status { display:flex; flex-direction:column; align-items:end; justify-content:center; gap:6px; font-variant-numeric:tabular-nums; }
+.counter-status strong { font-size:15px; white-space:nowrap; }
+.counter-status small { color:#88a2b7; font-size:11px; }
+.state-indicator { display:block; width:11px; height:11px; border-radius:50%; }
+.state-active { background:#64dec4; box-shadow:0 0 12px #64dec4; }
+.state-inactive { background:#a2a9b6; }
+.counter-progress { height:12px; position:relative; overflow:visible; border-radius:999px; background:#203247; margin:16px 2px 12px; }
+.counter-progress span { display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,#19637d,#5de7d0); transition:width .12s linear; }
+.counter-progress i { position:absolute; top:-5px; height:22px; width:2px; background:#ffba73; transform:translateX(-1px); box-shadow:0 0 8px #ffba7366; }
+.counter-extras { display:flex; flex-wrap:wrap; justify-content:space-between; gap:9px; color:#8ba5b8; font-size:12px; }
+.counter-extras strong { color:#e3edf5; font-variant-numeric:tabular-nums; }
+.playback-control { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:25px 0 14px; }
+.playback-control label { font-size:13px; font-weight:700; }
+.playback-control select { min-width:200px; max-width:100%; flex:1; background:#091726; border:1px solid #3a5168; border-radius:9px; color:#eff8ff; padding:10px; }
+.transport-buttons { display:flex; gap:9px; flex-wrap:wrap; }
+.transport-buttons .button { font-size:12px; padding:11px 13px; flex:1 1 auto; white-space:nowrap; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+.observation { background:#152d37; border-left:3px solid #5cdbcd; color:#c0d9dc; padding:14px 16px; border-radius:4px 9px 9px 4px; margin:20px 0 0; font-size:13px; line-height:1.7; min-height:68px; }
+.timeline-svg { margin:8px 0; }
+.timeline-background { fill:#0b1a2c; }
+.cnt-signal { stroke:#70b5e0; fill:none; stroke-width:2.5; stroke-linejoin:round; }
+.compare-guide { stroke:#f4aa68; stroke-width:1.6; stroke-dasharray:5 5; }
+.compare-edge { stroke:#e9a063; stroke-width:1.1; stroke-dasharray:3 5; opacity:.7; }
+.compare-label { fill:#f6bb86; font-size:12px; font-weight:700; paint-order:stroke; stroke:#0b1a2c; stroke-width:4px; }
+.cnt-cursor { stroke:#f0f8ff; stroke-width:1.7; stroke-dasharray:4 4; opacity:.8; }
+.cnt-cursor-dot { fill:#e8f9fc; stroke:#26657a; stroke-width:2; }
+.timeline-caption { fill:#cdddec; font-size:12px; font-weight:750; }
+.timeline-hint { font-size:12px; color:#90a7b9; line-height:1.6; margin:1px 0 17px; }
+.formula-line { font-size:12px; color:#a8d6d6; margin:18px 0 0; line-height:1.6; }
+.led-pair { display:flex; align-items:center; gap:12px; }
+.led-visual { display:flex; flex-direction:column; align-items:center; gap:7px; }
+.led-visual > span { color:#8ca7b7; font-size:10px; }
+@media (max-width:1100px) { .physical-panel { align-items:start; flex-direction:column; } }
+@media (max-width:650px) {
+  .learning-intro { padding:16px; }
+  .counter-display { padding:14px; }
+  .counter-number { font-size:35px; }
+  .counter-status strong { font-size:12px; }
+  .counter-limits { font-size:11px; }
+  .transport-buttons .button { flex:1 1 110px; }
+  .led-pair { width:100%; justify-content:space-around; }
+}
