@@ -26,6 +26,7 @@ describe("STM32F429-Upcounting PWM", () => {
   it("berücksichtigt die unterschiedlichen Zählerbreiten", () => {
     expect(() => calculateTimer("TIM1", { psc: 0, arr: 65536, ccr: 0 })).toThrow(RangeError);
     expect(calculateTimer("TIM2", { psc: 0, arr: 65536, ccr: 0 }).pwmHz).toBeGreaterThan(0);
+    expect(() => calculateTimer("TIM1", { psc: 0, arr: 65535, ccr: 65536 })).toThrow(RangeError);
   });
 
   it("weist ungültige Registerwerte zurück", () => {
