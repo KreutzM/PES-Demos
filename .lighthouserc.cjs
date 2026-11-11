@@ -7,7 +7,6 @@ module.exports = {
         "http://127.0.0.1:4173/PES-Demos/#/timer-pwm",
       ],
       startServerCommand: "npm run preview -- --host 127.0.0.1 --port 4173 --strictPort",
-      startServerReadyPattern: "Local:",
       numberOfRuns: 1,
       settings: { preset: "desktop", chromeFlags: "--no-sandbox --headless" },
     },
