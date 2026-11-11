@@ -53,3 +53,25 @@ Die Website wird unter `/PES-Demos/` gebaut. Der Workflow `.github/workflows/ci-
 ## Weiterentwicklung
 
 Die Demo-Bibliothek ist bewusst in `src/demos/` modular aufgebaut, damit später ADC-, Interrupt- und weitere PES-Demos ergänzt werden können.
+
+## Qualitätssicherung / Browser-Tests
+
+Die GitHub-Actions-CI führt nach jedem Pull Request und Push auf `main` folgende Prüfungen aus:
+
+- `npm ci`, TypeScript, Vitest und Vite-Produktionsbuild.
+- **Playwright in Chromium:** Desktop (1440 × 900) und Mobilgerät (Pixel-7-Profil), Smoke-Tests der Startseite, Timer-/PWM-Interaktionen, Taktbaum/TIMPRE, Prescaler und horizontale Layout-Überbreite.
+- **Screenshots:** vollständige PNGs im Actions-Artefakt `visual-screenshots`. Kleinere JPEG-Previews erscheinen zusätzlich in den CI-Logs als kodierte Bilddaten, damit sie maschinell überprüft werden können. Screenshots werden bei jedem Lauf erzeugt, nicht nur bei Fehlern.
+- **Playwright HTML-Report & Traces:** Artefakt `playwright-report`, Aufbewahrung 30 Tage.
+- **Lighthouse CI:** separater, zunächst nicht blockierender Audit für Performance, Accessibility und Best Practices auf beiden Hauptansichten. HTML-/JSON-Berichte im Artefakt `lighthouse-report`.
+
+GitHub Pages wird erst veröffentlicht, wenn **Unit-/Build- und Playwright-Browserprüfungen** erfolgreich waren. Lighthouse ist bewusst vorerst nur beratend, um durch schwankende Messwerte keine Veröffentlichungen zu blockieren.
+
+Lokal nach `npm ci` und `npm run build`:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+npx playwright show-report
+```
+
+Die Playwright-Konfiguration startet dafür automatisch `vite preview` auf Port 4173. Screenshots stammen aus der **gebauten Produktionsversion**, nicht aus dem Entwicklungsserver.

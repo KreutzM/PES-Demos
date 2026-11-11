@@ -4,3 +4,12 @@ dist/
 coverage/
 *.local
 .DS_Store
+
+# Playwright
+playwright-report/
+test-results/
+screenshots/
+
+# Lighthouse CI
+.lighthouseci/
+lighthouse-report/
