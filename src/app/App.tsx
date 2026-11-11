@@ -67,7 +67,7 @@ export default function App() {
 
   return (
     <div className="site">
-      <a className="skip-link" href="#inhalt">Zum Inhalt springen</a>
+      <a className="skip-link" href="#inhalt" onClick={(event) => { event.preventDefault(); const main = document.getElementById("inhalt"); if (main) { main.setAttribute("tabindex", "-1"); main.focus(); } }}>Zum Inhalt springen</a>
       <header className="site-header">
         <div className="container nav">
           <a className="brand" href="#/" aria-label="PES-Demos Startseite"><span className="brand-mark">∿</span><span>PES<span className="brand-light">-Demos</span></span></a>
