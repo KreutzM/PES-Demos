@@ -60,7 +60,7 @@ Die GitHub-Actions-CI führt nach jedem Pull Request und Push auf `main` folgend
 
 - `npm ci`, TypeScript, Vitest und Vite-Produktionsbuild.
 - **Playwright mit Chrome Stable auf GitHub Actions** (lokal: Chromium): Desktop (1440 × 900) und Mobilgerät (Pixel-7-Profil), Smoke-Tests der Startseite, Timer-/PWM-Interaktionen, Taktbaum/TIMPRE, Prescaler und horizontale Layout-Überbreite.
-- **Screenshots:** vollständige PNGs im Actions-Artefakt `visual-screenshots`. Kleinere JPEG-Previews erscheinen zusätzlich in den CI-Logs als kodierte Bilddaten, damit sie maschinell überprüft werden können. Screenshots werden bei jedem Lauf erzeugt, nicht nur bei Fehlern.
+- **Screenshots:** vollständige PNGs im Actions-Artefakt `visual-screenshots`. Kompakte JPEG-Previews liegen im selben Artefakt unter `previews/` und können über den GitHub-Connector für eine optische Prüfung heruntergeladen werden. Screenshots werden bei jedem Lauf erzeugt, nicht nur bei Fehlern.
 - **Playwright HTML-Report & Traces:** Artefakt `playwright-report`, Aufbewahrung 30 Tage.
 - **Lighthouse CI:** separater, zunächst nicht blockierender Audit für Performance, Accessibility und Best Practices auf beiden Hauptansichten. HTML-/JSON-Berichte im Artefakt `lighthouse-report`.
 
