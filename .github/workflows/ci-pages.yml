@@ -20,17 +20,7 @@ jobs:
         with:
           node-version: "22"
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
-      - name: Export lockfile (temporary bootstrap)
-        run: |
-          python3 - <<'PY'
-          import base64
-          with open("package-lock.json", "rb") as source:
-              payload = base64.b64encode(source.read()).decode("ascii")
-          for index in range(0, len(payload), 800):
-              print("LOCKFILE_CHUNK:" + payload[index:index + 800])
-          print("LOCKFILE_DONE:" + str(len(payload)))
-          PY
+        run: npm ci --no-audit --no-fund
       - name: Typecheck
         run: npm run typecheck
       - name: Unit tests
@@ -54,7 +44,7 @@ jobs:
         with:
           node-version: "22"
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Build production site
         run: npm run build
       - name: Install Chromium
@@ -94,7 +84,7 @@ jobs:
         with:
           node-version: "22"
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Build production site
         run: npm run build
       - name: Find Chrome
