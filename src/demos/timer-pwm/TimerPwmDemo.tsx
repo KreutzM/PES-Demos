@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import Waveform from "./components/Waveform";
 import ClockTree from "./components/ClockTree";
+import PrescalerPipeline from "./components/PrescalerPipeline";
+import {
+  advanceTimerClocks, INITIAL_CLOCKED_COUNTER, type ClockedCounterState,
+} from "./model/prescaler";
 import { calculateClockTree, DEFAULT_CLOCK_CONFIG, type ClockConfig } from "./model/clockTree";
 import {
-  advanceCounter, calculateTimer, pwmActive, ticksUntilCompare, ticksUntilOverflow,
-  TIMER_ARR_MAX, type CounterState, type TimerId,
+  calculateTimer, pwmActive, ticksUntilCompare, ticksUntilOverflow,
+  TIMER_ARR_MAX, type TimerId,
 } from "./model/timer";
 
-type Preset = "steps" | "blink" | "dim";
+type Preset = "divider" | "steps" | "blink" | "dim";
 type Playback = "ticks" | "period";
-
-const INITIAL_COUNTER: CounterState = { cnt: 0, overflows: 0 };
 
 function formatFrequency(value: number): string {
   return value.toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " Hz";
@@ -26,7 +28,7 @@ export default function TimerPwmDemo() {
   const [psc, setPsc] = useState(16799);
   const [arr, setArr] = useState(9);
   const [ccr, setCcr] = useState(3);
-  const [counter, setCounter] = useState<CounterState>(INITIAL_COUNTER);
+  const [counter, setCounter] = useState<ClockedCounterState>({ ...INITIAL_CLOCKED_COUNTER });
   const [playing, setPlaying] = useState(false);
   const [playback, setPlayback] = useState<Playback>("ticks");
   const [showCode, setShowCode] = useState(false);
@@ -37,10 +39,10 @@ export default function TimerPwmDemo() {
     if (!playing) return;
     const ticksPerFrame = playback === "ticks" ? 1 : Math.max(1, Math.ceil((arr + 1) / 20));
     const interval = window.setInterval(() => {
-      setCounter((previous) => advanceCounter(previous, arr, ticksPerFrame));
+      setCounter((previous) => advanceTimerClocks(previous, psc, arr, ticksPerFrame * (psc + 1)));
     }, 250);
     return () => window.clearInterval(interval);
-  }, [playing, playback, arr]);
+  }, [playing, playback, arr, psc]);
 
   const clock = calculateClockTree(clockConfig);
   const timerClockHz = timer === "TIM1" ? clock.tim1Hz : clock.tim2Hz;
@@ -63,7 +65,7 @@ export default function TimerPwmDemo() {
 
   function resetCounter() {
     setPlaying(false);
-    setCounter({ ...INITIAL_COUNTER });
+    setCounter({ ...INITIAL_CLOCKED_COUNTER });
   }
 
   function changeTimer(next: TimerId) {
@@ -96,7 +98,12 @@ export default function TimerPwmDemo() {
     resetCounter();
     setTimer("TIM1");
     setClockConfig({ ...DEFAULT_CLOCK_CONFIG }); // Presets refer to the documented RCC example.
-    if (preset === "steps") {
+    if (preset === "divider") {
+      setPsc(3);
+      setArr(9);
+      setCcr(3);
+      setPlayback("ticks");
+    } else if (preset === "steps") {
       setPsc(16799);
       setArr(9);
       setCcr(3);
@@ -116,7 +123,12 @@ export default function TimerPwmDemo() {
 
   function advance(ticks: number) {
     setPlaying(false);
-    setCounter((previous) => advanceCounter(previous, arr, ticks));
+    setCounter((previous) => advanceTimerClocks(previous, psc, arr, ticks * (psc + 1)));
+  }
+
+  function advanceInputCycles(cycles: number) {
+    setPlaying(false);
+    setCounter((previous) => advanceTimerClocks(previous, psc, arr, cycles));
   }
 
   let observation: string;
@@ -156,7 +168,7 @@ export default function TimerPwmDemo() {
           <h1>Timer &amp; <span className="accent">PWM</span></h1>
           <p className="lead">Sieh dem Zähler beim Arbeiten zu: Verändere Register, schalte Tick für Tick weiter und beobachte unmittelbar den PWM-Ausgang.</p>
         </div>
-        <span className="version-pill">Lernlabor · Version 0.3</span>
+        <span className="version-pill">Lernlabor · Version 0.4</span>
       </div>
 
       <div className="lesson-note" role="note">
@@ -168,15 +180,18 @@ export default function TimerPwmDemo() {
       <div className="learning-intro">
         <div className="intro-icon" aria-hidden="true">01</div>
         <div>
-          <h2>Experiment: Warum schaltet PWM bei CNT = CCR um?</h2>
-          <p>Starte mit <strong>ARR = 9</strong> und <strong>CCR2 = 3</strong>. Sage vorher voraus,
-          bei welchem CNT-Wert das Ausgangssignal von aktiv nach inaktiv wechselt.
-          Nutze dann „+1 Tick“ und kontrolliere deine Vorhersage im Zeitdiagramm.</p>
+          <h2>Zwei Fragen, zwei Zähler: Warum steht bei PSC und ARR jeweils „+1“?</h2>
+          <p>Wähle zunächst <strong>PSC = 3</strong> im Prescaler-Labor. Wie viele Eingangstakte
+          vergehen, bis sich CNT von 0 auf 1 erhöht? Untersuche anschließend <strong>ARR = 9,
+          CCR2 = 3</strong>: Bei welchem CNT-Wert wird PWM inaktiv?
+          Mit den Einzelschritt-Schaltflächen kannst du beides überprüfen.</p>
         </div>
       </div>
 
       <ClockTree config={clockConfig} clock={clock} activeTimer={timer} psc={psc} arr={arr}
         onChange={(next) => { resetCounter(); setClockConfig(next); }} />
+      <PrescalerPipeline timclkHz={timerClockHz} psc={psc} arr={arr} ccr={ccr}
+        state={counter} onClockStep={advanceInputCycles} onSmallExample={() => applyPreset("divider")} />
 
       <div className="demo-layout">
         <section className="panel controls-panel" aria-labelledby="settings-title">
@@ -216,6 +231,7 @@ export default function TimerPwmDemo() {
             <div className="range-labels"><span>0 %</span><span>100 %</span></div>
           </div>
           <div className="preset-buttons">
+            <button type="button" className="button button-ghost" onClick={() => applyPreset("divider")}>↺ PSC = 3 · ÷4</button>
             <button type="button" className="button button-ghost" onClick={() => applyPreset("steps")}>↺ 10 Ticks · 30 %</button>
             <button type="button" className="button button-ghost" onClick={() => applyPreset("blink")}>↺ 1 Hz · Blinken</button>
             <button type="button" className="button button-ghost" onClick={() => applyPreset("dim")}>↺ 1 kHz · Dimmen</button>
@@ -228,7 +244,7 @@ export default function TimerPwmDemo() {
             <div className="panel-header">
               <div className="eyebrow">02 / ZÄHLWERK</div>
               <h2 id="sim-title">Live-Zustand des Counters</h2>
-              <p>Der Timer wird hier didaktisch verlangsamt. Die Anzahl der simulierten Ticks ist exakt, aber die Browser-Wiedergabe läuft <strong>nicht in Echtzeit</strong>.</p>
+              <p>Der Timer wird hier didaktisch verlangsamt. Du kannst sowohl <strong>TIMxCLK-Eingangstakte</strong> im Prescaler-Labor als auch komplette <strong>CNT-Ticks</strong> weiterschalten. Die Browser-Wiedergabe läuft nicht in Echtzeit.</p>
             </div>
             <div className="counter-display">
               <div>
@@ -331,7 +347,7 @@ export default function TimerPwmDemo() {
           </section>
         </section>
       </div>
-      <p className="disclaimer">Taktbaum-Modellgrenzen: HSE/HSI/PLL-Generierung, Wechsel zur Laufzeit, Overdrive und Flash-Waitstates sind nicht simuliert. Modellgrenzen der Timer-Peripherie: idealisierter Upcounting-Betrieb mit PWM Mode 1 und sofort gültigen PSC-/ARR-/CCR-Werten nach Neustart. Register-Preload, Update-Events bei laufendem Timer, Output-Enable und das vollständige Pin-Multiplexing werden noch nicht dynamisch simuliert. Die Browser-Zeitrafferfunktion ist unabhängig von der realen Timer-Taktfrequenz.</p>
+      <p className="disclaimer">Der Prescaler wird für das Lernexperiment als bereits geladener Teiler behandelt. Beim realen STM32 werden PSC-Schreibzugriffe erst mit dem Update-Ereignis wirksam; die hier simulierte Phase beginnt nach jedem Registerwechsel wieder bei null. Taktbaum-Modellgrenzen: HSE/HSI/PLL-Generierung, Wechsel zur Laufzeit, Overdrive und Flash-Waitstates sind nicht simuliert. Modellgrenzen der Timer-Peripherie: idealisierter Upcounting-Betrieb mit PWM Mode 1 und sofort gültigen PSC-/ARR-/CCR-Werten nach Neustart. Register-Preload, Update-Events bei laufendem Timer, Output-Enable und das vollständige Pin-Multiplexing werden noch nicht dynamisch simuliert. Die Browser-Zeitrafferfunktion ist unabhängig von der realen Timer-Taktfrequenz.</p>
     </main>
   );
 }
