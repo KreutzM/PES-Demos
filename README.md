@@ -11,7 +11,8 @@ https://kreutzm.github.io/PES-Demos/
 
 Interaktive Einstiegssimulation für einen STM32F429 mit einem **explizit gewählten Taktprofil**:
 
-- Interaktiver STM32F429-RCC-Taktbaum mit SYSCLK, HPRE, PPRE1, PPRE2 und TIMPRE\n- TIM1 (16 Bit, APB2) und TIM2 (32 Bit, APB1): Timer-Takte dynamisch aus dem Clock-Tree berechnet
+- Interaktiver STM32F429-RCC-Taktbaum mit SYSCLK, HPRE, PPRE1, PPRE2 und TIMPRE
+- TIM1 (16 Bit, APB2) und TIM2 (32 Bit, APB1): Timer-Takte dynamisch aus dem Clock-Tree berechnet
 - Register PSC, ARR und CCR2 sowie Frequenz und Duty-Cycle
 - Synchronisiertes Zeitdiagramm für CNT-Zähler, CCR2 und PWM Mode 1
 - Einzelschritt (+1 Tick), Sprung zur Compare-Schwelle, Überlauf, Start/Pause, Zeitraffer
