@@ -59,7 +59,7 @@ Die Demo-Bibliothek ist bewusst in `src/demos/` modular aufgebaut, damit später
 Die GitHub-Actions-CI führt nach jedem Pull Request und Push auf `main` folgende Prüfungen aus:
 
 - `npm ci`, TypeScript, Vitest und Vite-Produktionsbuild.
-- **Playwright in Chromium:** Desktop (1440 × 900) und Mobilgerät (Pixel-7-Profil), Smoke-Tests der Startseite, Timer-/PWM-Interaktionen, Taktbaum/TIMPRE, Prescaler und horizontale Layout-Überbreite.
+- **Playwright mit Chrome Stable auf GitHub Actions** (lokal: Chromium): Desktop (1440 × 900) und Mobilgerät (Pixel-7-Profil), Smoke-Tests der Startseite, Timer-/PWM-Interaktionen, Taktbaum/TIMPRE, Prescaler und horizontale Layout-Überbreite.
 - **Screenshots:** vollständige PNGs im Actions-Artefakt `visual-screenshots`. Kleinere JPEG-Previews erscheinen zusätzlich in den CI-Logs als kodierte Bilddaten, damit sie maschinell überprüft werden können. Screenshots werden bei jedem Lauf erzeugt, nicht nur bei Fehlern.
 - **Playwright HTML-Report & Traces:** Artefakt `playwright-report`, Aufbewahrung 30 Tage.
 - **Lighthouse CI:** separater, zunächst nicht blockierender Audit für Performance, Accessibility und Best Practices auf beiden Hauptansichten. HTML-/JSON-Berichte im Artefakt `lighthouse-report`.
@@ -75,3 +75,5 @@ npx playwright show-report
 ```
 
 Die Playwright-Konfiguration startet dafür automatisch `vite preview` auf Port 4173. Screenshots stammen aus der **gebauten Produktionsversion**, nicht aus dem Entwicklungsserver.
+
+Der GitHub-Runner bringt **Google Chrome Stable** bereits mit. Der Playwright-Job verwendet ihn dort direkt, statt Chromium erneut herunterzuladen. Lokal verwendet Playwright nach `npx playwright install chromium` die eigene Chromium-Version.
