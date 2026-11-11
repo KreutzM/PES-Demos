@@ -29,7 +29,7 @@ export default function TimerPwmDemo() {
     const safeArr = Math.max(0, Math.min(TIMER_ARR_MAX[timer], Math.trunc(nextArr) || 0));
     const previousDuty = ccr / (arr + 1);
     setArr(safeArr);
-    setCcr(Math.round(previousDuty * (safeArr + 1)));
+    setCcr(Math.min(TIMER_ARR_MAX[timer], Math.round(previousDuty * (safeArr + 1))));
   }
 
   function applyPreset(next: "blink" | "dim") {
@@ -99,12 +99,12 @@ export default function TimerPwmDemo() {
           </div>
           <div className="field">
             <label htmlFor="ccr">CCR2 <span>Compare-Register</span></label>
-            <input id="ccr" type="number" min="0" max={arr + 1} step="1" value={ccr} onChange={(event) => setCcr(Number(event.target.value))}/>
+            <input id="ccr" type="number" min="0" max={Math.min(arr + 1, TIMER_ARR_MAX[timer])} step="1" value={ccr} onChange={(event) => setCcr(Number(event.target.value))}/>
             <p className="field-hint">PWM Mode 1: aktiv für CNT &lt; CCR2.</p>
           </div>
           <div className="field slider-field">
             <label htmlFor="duty">Duty-Cycle <strong>{result ? (result.duty * 100).toFixed(1) : "–"} %</strong></label>
-            <input id="duty" type="range" min="0" max="100" step="1" value={result ? result.duty * 100 : 0} onChange={(event) => setCcr(Math.round(Number(event.target.value) / 100 * (arr + 1)))} aria-label="Aktiver Duty-Cycle"/>
+            <input id="duty" type="range" min="0" max="100" step="1" value={result ? result.duty * 100 : 0} onChange={(event) => setCcr(Math.min(TIMER_ARR_MAX[timer], Math.round(Number(event.target.value) / 100 * (arr + 1))))} aria-label="Aktiver Duty-Cycle"/>
             <div className="range-labels"><span>0 %</span><span>100 %</span></div>
           </div>
           <div className="preset-buttons">
