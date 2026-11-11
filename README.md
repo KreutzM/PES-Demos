@@ -24,7 +24,7 @@ Interaktive Einstiegssimulation für einen STM32F429 mit einem **explizit gewäh
 Voraussetzung: Node.js 22.12 oder neuer.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -36,7 +36,7 @@ npm run test
 npm run build
 ```
 
-**Hinweis zum ersten Bootstrap:** In diesem ersten PR wird zunächst noch ohne eingecheckte `package-lock.json` gearbeitet. Deshalb installiert die CI vorübergehend mit `npm install`. Nach dem ersten erfolgreichen CI-Lauf sollte das erzeugte Lockfile eingecheckt und der Workflow auf `npm ci` umgestellt werden.
+Die Abhängigkeiten werden über die eingecheckte `package-lock.json` festgelegt. CI und lokale reproduzierbare Builds verwenden `npm ci`.
 
 ## Veröffentlichung
 
