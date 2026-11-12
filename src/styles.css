@@ -299,9 +299,8 @@ button:disabled { opacity:.45; cursor:not-allowed; }
 .preset-restore { margin-top:14px; width:100%; }
 .preset-status { color:#94e1cc; font-size:12px; line-height:1.6; margin:9px 0 0; }
 
-/* PR #8 review: keep the PSC example's side effects visible before clicking */
-.divider-example-action { display:flex; flex-direction:column; gap:7px; width:min(100%,260px); flex:0 0 auto; }
-.divider-example-action .button { width:100%; }
-.divider-preset-warning { margin:0; font-size:12px; line-height:1.55; color:#b3cdd8; }
+/* PR #8 review: the example button itself spells out the complete reset */
+.divider-example-button { display:flex; flex-direction:column; align-items:flex-start; gap:4px; text-align:left; max-width:280px; }
+.divider-example-button .divider-preset-warning { display:block; font-size:11px; line-height:1.45; color:#b3cdd8; font-weight:450; white-space:normal; }
 .duty-limit-note { color:#f0d19e; }
-@media(max-width:700px) { .divider-example-action { width:100%; } }
+@media(max-width:700px) { .divider-example-button { width:100%; max-width:100%; } }

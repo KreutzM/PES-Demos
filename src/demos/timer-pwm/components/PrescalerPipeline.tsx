@@ -41,10 +41,10 @@ export default function PrescalerPipeline({ timclkHz, psc, arr, ccr, state, onCl
           <p>PSC und ARR speichern jeweils den <strong>Endwert einer Zählung ab 0</strong>.
             Deshalb zählt der Prescaler <strong>0 … PSC</strong> und CNT <strong>0 … ARR</strong>.</p>
         </div>
-        <div className="divider-example-action">
-          <p className="divider-preset-warning">Dieses Beispiel lädt TIM1, das RCC-Praktikumsprofil, PSC, ARR und CCR2 neu, stoppt die Wiedergabe und setzt CNT und Prescaler-Phase zurück.</p>
-          <button type="button" className="button button-ghost" onClick={onSmallExample}>Beispiel: PSC = 3</button>
-        </div>
+        <button type="button" className="button button-ghost divider-example-button" onClick={onSmallExample}>
+          <span>Beispiel: PSC = 3</span>
+          <small className="divider-preset-warning">Lädt TIM1, RCC-Profil, PSC/ARR/CCR2 neu; Wiedergabe und Zähler werden zurückgesetzt.</small>
+        </button>
       </div>
 
       <div className="divider-flow" aria-label="Taktweg vom Timer-Eingang bis zur PWM">

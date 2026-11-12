@@ -42,11 +42,9 @@ test("Taktbaum: TIM2 zunächst halb so schnell, mit TIMPRE wieder gleich schnell
 
 test("Vier Eingangstaktimpulse bei PSC=3 ergeben erst einen CNT-Zählschritt", async ({ page }, info) => {
   await page.goto("/PES-Demos/#/timer-pwm");
-  const upperWarning = page.locator(".divider-preset-warning");
   const upperButton = page.getByRole("button", { name: /Beispiel: PSC = 3/ });
-  await expect(upperWarning).toBeVisible();
-  const [warningRect, buttonRect] = await Promise.all([upperWarning.boundingBox(), upperButton.boundingBox()]);
-  expect(warningRect && buttonRect && warningRect.y + warningRect.height <= buttonRect.y + 2).toBeTruthy();
+  await expect(upperButton.locator(".divider-preset-warning")).toBeVisible();
+  await expect(upperButton).toContainText("zurückgesetzt");
   await upperButton.click();
   const cnt = page.locator(".counter-number");
   const phase = page.locator(".divider-phase-number strong");
