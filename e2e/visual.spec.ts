@@ -252,7 +252,7 @@ test("Geführter Einstieg: PSC, ARR, CCR2, Frequenz als Vorhersage–Experiment�
   await page.getByRole("button", { name: "ARR auf 19 setzen" }).click();
   await expect(page.getByTestId("guided-frequency")).toHaveText("1,05 MHz");
   await expect(page.getByTestId("guided-ccr")).toHaveText("3");
-  await expect(page.locator(".guided-result")).toContainText("nacheinander halbiert");
+  await expect(page.locator(".guided-result")).toContainText("die Frequenz halbiert sich erneut");
   await capture(page, info.project.name, "guided-frequency-observed");
 });
 
