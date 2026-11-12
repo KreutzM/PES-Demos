@@ -419,3 +419,83 @@ button:disabled { opacity:.45; cursor:not-allowed; }
   .guided-heading p { line-height:1.45; }
   .guided-progress { margin:12px 0; }
 }
+
+/* Issue #11: free lab prioritizes interaction and offers keyboard-safe jump navigation */
+.free-lab .lesson-note { margin:14px 0 12px; padding:13px 17px; }
+.free-lab .learning-intro { margin:0 0 18px; padding:15px 18px; }
+.free-lab .learning-intro .intro-icon { display:none; }
+.lab-jump-nav { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 14px; }
+.lab-jump-label { color:#c9dce7; font-weight:700; font-size:13px; margin-right:2px; }
+.lab-jump-nav button {
+  background:#132a3c; border:1px solid #3c5a6f; color:#e0f1f5;
+  padding:9px 12px; min-height:44px; border-radius:9px; font:inherit;
+  font-size:13px; font-weight:650; cursor:pointer;
+}
+.lab-jump-nav button:hover { background:#204350; border-color:#64d6cb; }
+.free-lab [id^="lab-"][tabindex="-1"] { scroll-margin-top:96px; }
+.free-lab [id^="lab-"][tabindex="-1"]:focus { outline:2px solid #64d6cb; outline-offset:5px; }
+.lab-deep-dive { margin:27px 0 12px; }
+.lab-deep-dive-heading { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:16px; }
+.lab-deep-dive-heading h2 { font-size:clamp(22px,2.5vw,30px); margin:7px 0; }
+.lab-deep-dive-heading p { color:#bdcfdb; font-size:13px; line-height:1.65; margin:0; }
+.lab-deep-dive .clock-tree-panel { margin-bottom:18px; }
+.lab-back-to-register { margin:0 0 8px; }
+/* Readability: avoid tiny, low-contrast technical explanations. */
+.free-lab .field-hint,.free-lab .clock-footnote,.free-lab .divider-footnote,
+.free-lab .clock-select,.free-lab .counter-status small,
+.free-lab .divider-stage small,.free-lab .divider-preset-warning,
+.free-lab .wave-secondary { font-size:12px; color:#b0c6d6; line-height:1.65; }
+.free-lab .divider-stage-index { font-size:11px; color:#a7c6d8; }
+.free-lab .divider-stage-title { font-size:13px; }
+.free-lab .led-visual > span { font-size:12px; color:#bed4de; }
+.free-lab .field label { flex-wrap:wrap; }
+.free-lab .transport-buttons .button { min-height:44px; white-space:normal; }
+.free-lab .playback-control select, .free-lab .clock-select select { min-height:44px; }
+@media(max-width:650px) {
+  .free-lab { padding-top:14px; }
+  .free-lab .demo-heading { padding:5px 0; }
+  .free-lab .demo-heading h1 { margin:5px 0; font-size:clamp(31px,9vw,44px); }
+  .free-lab .demo-heading .lead { font-size:13px; line-height:1.5; }
+  .free-lab .lesson-note { font-size:12px; padding:11px 13px; }
+  .free-lab .learning-intro { padding:13px; }
+  .lab-jump-nav { gap:7px; }
+  .lab-jump-label { flex:1 0 100%; }
+  .lab-jump-nav button { flex:1 1 auto; padding:10px; }
+  .lab-deep-dive-heading { flex-direction:column; align-items:flex-start; gap:10px; }
+  .free-lab .clock-node-value { white-space:normal; overflow-wrap:anywhere; }
+}
+@media(max-width:420px) {
+  .free-lab .counter-display { flex-direction:column; align-items:stretch; gap:10px; }
+  .free-lab .counter-status { align-items:flex-start; }
+  .free-lab .counter-limits { overflow-wrap:anywhere; }
+  .free-lab .clock-chart { padding:11px 8px; }
+  .free-lab .clock-source-row { display:grid; grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr); gap:5px; }
+  .free-lab .clock-source-row .clock-node { padding:7px; }
+  .free-lab .clock-source-row .clock-node-value { font-size:13px; }
+  .free-lab .clock-source-row .clock-connector { gap:0; }
+  .free-lab .clock-path { gap:5px; padding:6px; }
+  .free-lab .clock-path .clock-node { padding:6px; }
+  .free-lab .clock-path .clock-node-value { font-size:13px; }
+  .free-lab .clock-node small { font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+  .free-lab .divider-equations { grid-template-columns:minmax(0,1fr); }
+}
+@media(prefers-reduced-motion:reduce) {
+  html { scroll-behavior:auto; }
+  .free-lab .counter-progress span { transition:none; }
+}
+
+/* Review #12: show derived results and a one-tap route at the register inputs. */
+.lab-local-feedback {
+  margin:0 0 19px; padding:12px 13px; border-radius:10px;
+  border:1px solid #376a70; background:#14353e; color:#d6f0ed;
+  font-size:13px; line-height:1.65;
+}
+.lab-local-feedback output { display:block; overflow-wrap:anywhere; }
+.lab-local-feedback output strong { color:#83f4df; }
+.lab-local-jumps { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.lab-local-jumps button {
+  flex:1 1 125px; min-height:44px; padding:8px 10px;
+  font:inherit; font-weight:700; font-size:12px; color:#e9fcf7;
+  background:#1a4955; border:1px solid #4c9c9b; border-radius:8px; cursor:pointer;
+}
+.lab-local-jumps button:hover { background:#26606b; }

@@ -33,7 +33,7 @@ export default function PrescalerPipeline({ timclkHz, psc, arr, ccr, state, onCl
   const stepsVisible = divisor <= 16;
   const countTickJustEmitted = state.lastCounterTicks > 0;
   return (
-    <section className="panel divider-lab" aria-labelledby="divider-lab-title">
+    <section id="lab-prescaler" tabIndex={-1} className="panel divider-lab" aria-labelledby="divider-lab-title">
       <div className="divider-title-row">
         <div>
           <div className="eyebrow">VOM TAKT ZUM PWM-SIGNAL · ZWEI TEILER</div>

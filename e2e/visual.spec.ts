@@ -342,3 +342,139 @@ test("Geführter Einstieg bleibt bei 360 px ohne horizontales Scrollen, Frage im
   horizontal = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(horizontal).toBeLessThanOrEqual(2);
 });
+
+test("Freies Labor: Register zuerst, Sprungnavigation per Tastatur und Hinweise verknüpft", async ({ page }, info) => {
+  await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
+
+  const registers = page.locator("#lab-register");
+  const clock = page.locator("#lab-clock");
+  const prescaler = page.locator("#lab-prescaler");
+  const wave = page.locator("#lab-waveform");
+  const y = async (selector: import("@playwright/test").Locator) =>
+    selector.evaluate(el => el.getBoundingClientRect().top + window.scrollY);
+
+  expect(await y(registers)).toBeLessThan(await y(clock));
+  expect(await y(wave)).toBeLessThan(await y(prescaler));
+  await expect(page.locator("#arr")).toHaveAttribute("aria-describedby", /arr-hint/);
+  await expect(page.locator("#ccr")).toHaveAttribute("aria-describedby", /ccr-hint/);
+  await expect(page.locator("#duty")).toHaveAttribute("aria-describedby", /duty-hint/);
+  await expect(page.locator(".preset-buttons")).toHaveAttribute("aria-describedby", "preset-effects");
+
+  await page.locator("#arr").fill("19");
+  await expect(page.locator("#ccr")).toHaveValue("3");
+  await expect(page.locator("label[for='duty']")).toContainText("15,0 %");
+  await expect(page.locator(".lab-local-feedback")).toContainText("15,0 %");
+  await expect(page.locator(".lab-local-feedback")).toContainText("CCR2 = 3");
+  await capture(page, info.project.name, "free-lab-interaction-first");
+  await page.getByRole("button", { name: "→ CNT ansehen" }).click();
+  await expect(page.locator("#lab-counter")).toBeFocused();
+
+  const navigation = page.getByRole("navigation", { name: "Direkt zu einem Bereich im freien Labor" });
+  const toClock = navigation.getByRole("button", { name: "RCC-Taktbaum" });
+  await toClock.focus();
+  await page.keyboard.press("Enter");
+  await expect(clock).toBeFocused();
+  await expect(clock).toBeInViewport();
+  await expect(clock.getByRole("heading", { name: /Woher bekommt der Timer/ })).toBeVisible();
+
+  await page.getByRole("button", { name: "↑ Zur Registersteuerung", exact: true }).click();
+  await expect(registers).toBeFocused();
+  await expect(registers).toBeInViewport();
+
+  await navigation.getByRole("button", { name: "Prescaler-Labor" }).click();
+  await expect(prescaler).toBeFocused();
+  await expect(prescaler).toBeInViewport();
+  await expect(prescaler.getByRole("button", { name: "+1 Eingangstaktimpuls" })).toBeVisible();
+});
+
+test("320–1280 px: beide Lernmodi ohne horizontale Dokument-Überbreite", async ({ page }, info) => {
+  for (const width of [320, 360, 393, 768, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/PES-Demos/#/timer-pwm");
+    // Changing viewport on the same hash route does not remount the React app.
+    await page.getByRole("button", { name: "Geführter Einstieg", exact: true }).click();
+    await expect(page.getByTestId("guided-question")).toBeVisible();
+
+    let excess = await page.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(excess, "Geführter Modus bei " + width + " px").toBeLessThanOrEqual(2);
+
+    await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
+    await expect(page.locator("#lab-register")).toBeVisible();
+    await page.locator("#lab-clock").scrollIntoViewIfNeeded();
+    excess = await page.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(excess, "Freies Labor bei " + width + " px").toBeLessThanOrEqual(2);
+    await expect(page.locator("#lab-clock .clock-controls select").first()).toBeVisible();
+    if (width === 320 || width === 768) {
+      await capture(page, info.project.name, "free-lab-" + width + "px");
+    }
+  }
+});
+
+test("Mobile RCC-Texte bleiben lesbar, selbst bei großen TIM2-Werten", async ({ page }, info) => {
+  for (const width of [320, 360]) {
+    await page.setViewportSize({ width, height: 780 });
+    await page.goto("/PES-Demos/#/timer-pwm");
+    await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
+    await page.locator("#timer").selectOption("TIM2");
+    await page.locator("#arr").fill("4294967295");
+    await page.locator("#ccr").fill("4294967295");
+    await page.locator(".clock-controls .clock-select").nth(2).locator("select").selectOption("8");
+    await page.locator(".clock-checkbox input").check();
+
+    await expect(page.locator("#arr")).toHaveValue("4294967295");
+    const lab = page.locator(".free-lab");
+    const sizes = await lab.locator(".clock-node small").evaluateAll(elements =>
+      elements.map(el => parseFloat(getComputedStyle(el).fontSize)));
+    expect(sizes.length).toBeGreaterThan(0);
+    expect(Math.min(...sizes), "RCC-Labelgröße bei " + width + " px").toBeGreaterThanOrEqual(12);
+
+    // Detect local clipping in the most important clock/result/controls containers.
+    const clipping = await page.locator(
+      ".free-lab .clock-node, .free-lab .clock-node-value, .free-lab .divider-equations, " +
+      ".free-lab .field input[type=number], .free-lab .transport-buttons .button"
+    ).evaluateAll(elements =>
+      elements.filter(el => el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 2)
+        .map(el => ({ className: el.className, text: el.textContent?.slice(0,40) ?? "" })));
+    expect(clipping, "Knoten/Bedienelemente bei " + width + " px").toEqual([]);
+    const touchHeights = await lab.locator(
+      ".lab-jump-nav button, .lab-local-jumps button, .transport-buttons button, .clock-controls select"
+    ).evaluateAll(elements => elements.map(el => el.getBoundingClientRect().height));
+    expect(Math.min(...touchHeights)).toBeGreaterThanOrEqual(43);
+    const documentExcess = await page.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(documentExcess).toBeLessThanOrEqual(2);
+    await capture(page, info.project.name, "free-lab-rcc-long-tim2-" + width + "px");
+  }
+});
+
+test("Sprungziele bleiben bei Desktop und 320 px unterhalb des Sticky Headers sichtbar", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  for (const width of [320, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/PES-Demos/#/timer-pwm");
+    await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
+    const nav = page.getByRole("navigation", { name: "Direkt zu einem Bereich im freien Labor" });
+    const targets = [
+      { button: "Registern", id: "lab-register" },
+      { button: "CNT & Steuerung", id: "lab-counter" },
+      { button: "Zeitdiagramm", id: "lab-waveform" },
+      { button: "RCC-Taktbaum", id: "lab-clock" },
+      { button: "Prescaler-Labor", id: "lab-prescaler" },
+    ];
+    for (const {button, id} of targets) {
+      await nav.getByRole("button", { name: button, exact: true }).click();
+      const target = page.locator("#" + id);
+      await expect(target).toBeFocused();
+      const positions = await page.evaluate((targetId) => ({
+        headingTop: document.querySelector("#" + targetId + " h2")!.getBoundingClientRect().top,
+        headerBottom: document.querySelector(".site-header")!.getBoundingClientRect().bottom,
+      }), id);
+      expect(positions.headingTop, id + " bei " + width + " px")
+        .toBeGreaterThanOrEqual(positions.headerBottom - 2);
+      await expect(target.locator("h2").first()).toBeInViewport();
+    }
+  }
+});
