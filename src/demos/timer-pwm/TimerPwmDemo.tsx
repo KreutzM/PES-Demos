@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Waveform from "./components/Waveform";
 import ClockTree from "./components/ClockTree";
 import PrescalerPipeline from "./components/PrescalerPipeline";
+import GuidedTimerLesson from "./components/GuidedTimerLesson";
 import {
   advanceTimerClocks, INITIAL_CLOCKED_COUNTER, type ClockedCounterState,
 } from "./model/prescaler";
@@ -48,7 +49,7 @@ function formatDutyPercent(duty: number): string {
 export default function TimerPwmDemo() {
   const [timer, setTimer] = useState<TimerId>("TIM1");
   const [clockConfig, setClockConfig] = useState<ClockConfig>({ ...DEFAULT_CLOCK_CONFIG });
-  const [psc, setPsc] = useState(16799);
+  const [psc, setPsc] = useState(3);
   const [arr, setArr] = useState(9);
   const [ccr, setCcr] = useState(3);
   const [counter, setCounter] = useState<ClockedCounterState>({ ...INITIAL_CLOCKED_COUNTER });
@@ -57,6 +58,14 @@ export default function TimerPwmDemo() {
   const [showCode, setShowCode] = useState(false);
   const [savedBeforePreset, setSavedBeforePreset] = useState<PresetSnapshot | null>(null);
   const [presetStatus, setPresetStatus] = useState("");
+  const [lessonView, setLessonView] = useState<"guided" | "free">("guided");
+  const [lessonStep, setLessonStep] = useState(0);
+  const [lessonAnswer, setLessonAnswer] = useState("");
+  const [freeSnapshot, setFreeSnapshot] = useState<PresetSnapshot>({
+    timer: "TIM1", clockConfig: { ...DEFAULT_CLOCK_CONFIG },
+    psc: 16799, arr: 9, ccr: 3,
+    counter: { ...INITIAL_CLOCKED_COUNTER }, playback: "ticks",
+  });
 
   // Ein didaktischer Zeitraffer, ausdrücklich KEINE Echtzeit-Hardwaresimulation.
   // Große ARR-Werte werden in Schritten bearbeitet; Counter-Ereignisse bleiben exakt.
@@ -165,6 +174,42 @@ export default function TimerPwmDemo() {
     setPresetStatus("Vorherige Timer- und RCC-Konfiguration samt Zählerstand wiederhergestellt. Die Wiedergabe bleibt pausiert.");
   }
 
+  function initializeGuidedExperiment(nextStep: number) {
+    setPlaying(false);
+    setTimer("TIM1");
+    setClockConfig({ ...DEFAULT_CLOCK_CONFIG });
+    setPsc(3);
+    setArr(9);
+    setCcr(3);
+    setPlayback("ticks");
+    setCounter({ ...INITIAL_CLOCKED_COUNTER });
+    setLessonStep(nextStep);
+    setLessonAnswer("");
+  }
+
+  function openGuidedLesson() {
+    if (lessonView === "guided") return;
+    setFreeSnapshot({
+      timer, clockConfig: { ...clockConfig }, psc, arr, ccr,
+      counter: { ...counter }, playback,
+    });
+    setLessonView("guided");
+    initializeGuidedExperiment(0);
+  }
+
+  function openFreeLab() {
+    if (lessonView === "free") return;
+    setPlaying(false);
+    setLessonView("free");
+    setTimer(freeSnapshot.timer);
+    setClockConfig({ ...freeSnapshot.clockConfig });
+    setPsc(freeSnapshot.psc);
+    setArr(freeSnapshot.arr);
+    setCcr(freeSnapshot.ccr);
+    setCounter({ ...freeSnapshot.counter });
+    setPlayback(freeSnapshot.playback);
+  }
+
   function advance(ticks: number) {
     setPlaying(false);
     setCounter((previous) => advanceTimerClocks(previous, psc, arr, ticks * (psc + 1)));
@@ -216,9 +261,30 @@ export default function TimerPwmDemo() {
           <h1>Timer &amp; <span className="accent">PWM</span></h1>
           <p className="lead">Beobachte die Timer-Register: Schalte den CNT-Zähler schrittweise weiter und untersuche das interne PWM-Referenzsignal OC2REF.</p>
         </div>
-        <span className="version-pill">Lernlabor · Version 0.5</span>
+        <span className="version-pill">Lernlabor · Version 0.6</span>
       </div>
 
+      <nav className="learning-mode-switch" aria-label="Timer-Lernmodus">
+        <button type="button" className={lessonView === "guided" ? "selected" : ""}
+          aria-pressed={lessonView === "guided"} onClick={openGuidedLesson}>Geführter Einstieg</button>
+        <button type="button" className={lessonView === "free" ? "selected" : ""}
+          aria-pressed={lessonView === "free"} onClick={openFreeLab}>Freies Labor</button>
+      </nav>
+
+      {lessonView === "guided" && result && (
+        <GuidedTimerLesson
+          step={lessonStep} answer={lessonAnswer} onAnswer={setLessonAnswer}
+          psc={psc} arr={arr} ccr={ccr} state={counter} result={result}
+          onInputClock={() => advanceInputCycles(1)}
+          onCounterStep={advance}
+          onPrescalerChange={changePrescaler}
+          onPeriodChange={changePeriod}
+          onGoToStep={initializeGuidedExperiment}
+          onOpenFreeLab={openFreeLab}
+        />
+      )}
+
+      {lessonView === "free" && <>
       <div className="lesson-note" role="note">
         <strong>Praktikumsprofil:</strong> SYSCLK 168 MHz, AHB ÷1, APB1 ÷4 und APB2 ÷2, TIMPRE = 0.
         Die Timer erhalten ihren Eingangstakt aus dem RCC-Taktbaum, <strong>nicht automatisch aus SYSCLK</strong>.
@@ -404,6 +470,7 @@ export default function TimerPwmDemo() {
         </section>
       </div>
       <p className="disclaimer">Der Prescaler wird für das Lernexperiment als bereits geladener Teiler behandelt. Beim realen STM32 werden PSC-Schreibzugriffe erst mit dem Update-Ereignis wirksam; die hier simulierte Phase beginnt nach jedem Registerwechsel wieder bei null. Taktbaum-Modellgrenzen: HSE/HSI/PLL-Generierung, Wechsel zur Laufzeit, Overdrive und Flash-Waitstates sind nicht simuliert. Modellgrenzen der Timer-Peripherie: idealisierter Upcounting-Betrieb mit PWM Mode 1 und sofort gültigen PSC-/ARR-/CCR-Werten nach Neustart. Register-Preload, Update-Events bei laufendem Timer, Output-Enable und das vollständige Pin-Multiplexing werden noch nicht dynamisch simuliert. Die Browser-Zeitrafferfunktion ist unabhängig von der realen Timer-Taktfrequenz.</p>
+      </>}
     </main>
   );
 }
