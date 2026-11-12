@@ -42,7 +42,7 @@ function counterPath(arr: number): string {
 }
 
 function pwmPath(arr: number, ccr: number): string {
-  const duty = ccr / (arr + 1);
+  const duty = Math.min(1, ccr / (arr + 1));
   const d: string[] = [];
   for (let i = 0; i < 2; i += 1) {
     const x0 = X0 + i * PERIOD_WIDTH;
@@ -70,6 +70,7 @@ export default function Waveform({ arr, ccr, cnt, periodSeconds }: WaveformProps
   const cursorX = X0 + ((cnt + 0.5) / (arr + 1)) * PERIOD_WIDTH;
   const cursorY = counterY(cnt, arr);
   const compareX = X0 + ccr / (arr + 1) * PERIOD_WIDTH;
+  const switchingThreshold = ccr > 0 && ccr <= arr;
   const stepsVisible = arr < 24;
   const counter = counterPath(arr);
   const pwm = pwmPath(arr, ccr);
@@ -78,9 +79,9 @@ export default function Waveform({ arr, ccr, cnt, periodSeconds }: WaveformProps
   return (
     <div>
       <svg className="waveform timeline-svg" viewBox="0 0 700 303" role="img"
-        aria-label={"Zählstand " + cnt + " von 0 bis " + arr + ". PWM aktuell " + (isActive ? "aktiv" : "inaktiv") + ". Duty " + (ccr / (arr + 1) * 100).toFixed(2) + " Prozent."}>
-        <title>Synchronisierte Zähler- und PWM-Darstellung</title>
-        <desc>Das obere Signal zeigt den CNT-Verlauf, die orange Linie den CCR2-Wert. Unten ist PWM Mode 1 dargestellt. Der gestrichelte Cursor markiert den aktuellen Tick.</desc>
+        aria-label={"CNT-Zählerstand " + cnt + " von 0 bis " + arr + ". Internes PWM-Referenzsignal OC2REF aktuell " + (isActive ? "aktiv" : "inaktiv") + ". Tastverhältnis " + (Math.min(1, ccr / (arr + 1)) * 100).toFixed(2) + " Prozent."}>
+        <title>CNT-Zähler und internes PWM-Referenzsignal OC2REF</title>
+        <desc>Oben: CNT-Zählerstand. Bei 0 &lt; CCR2 &lt;= ARR zeigt die orange Linie die CCR2-Schwelle. Unten: internes OC2REF im aufwärtszählenden PWM-Modus 1. Der Cursor markiert den aktuellen CNT-Zählschritt.</desc>
         <rect x={X0} y="20" width={PERIOD_WIDTH * 2} height="260" rx="8" className="timeline-background" />
         {[0, 1, 2].map((i) => (
           <line key={i} x1={X0 + i * PERIOD_WIDTH} y1="20" x2={X0 + i * PERIOD_WIDTH} y2="280" className="wave-grid"/>
@@ -91,17 +92,17 @@ export default function Waveform({ arr, ccr, cnt, periodSeconds }: WaveformProps
         <text x="5" y="52" className="timeline-caption">CNT</text>
         <text x="5" y="79" className="wave-label">{arr.toLocaleString("de-DE")}</text>
         <text x="45" y="141" className="wave-label">0</text>
-        <text x="5" y="220" className="timeline-caption">PWM</text>
+        <text x="5" y="220" className="timeline-caption">OC2REF</text>
         <text x="44" y="209" className="wave-label">1</text>
         <text x="44" y="261" className="wave-label">0</text>
-        {ccr <= arr && (
+        {switchingThreshold && (
           <>
             <line x1={X0} x2={X0 + 2 * PERIOD_WIDTH} y1={counterY(ccr, arr)} y2={counterY(ccr, arr)} className="compare-guide" />
             <text x={X0 + 2 * PERIOD_WIDTH - 6} y={Math.max(25, counterY(ccr, arr) - 7)}
               className="compare-label" textAnchor="end">CCR2 = {ccr.toLocaleString("de-DE")}</text>
           </>
         )}
-        {ccr > 0 && ccr <= arr && [0, 1].map((i) => (
+        {switchingThreshold && [0, 1].map((i) => (
           <line key={i} x1={compareX + i * PERIOD_WIDTH} y1="155"
             x2={compareX + i * PERIOD_WIDTH} y2="273" className="compare-edge"/>
         ))}
@@ -113,7 +114,7 @@ export default function Waveform({ arr, ccr, cnt, periodSeconds }: WaveformProps
         <text x={X0 + PERIOD_WIDTH / 2} y="294" textAnchor="middle" className="wave-label">T = {periodMs} ms</text>
         <text x={X0 + PERIOD_WIDTH * 1.5} y="294" textAnchor="middle" className="wave-label">T = {periodMs} ms</text>
       </svg>
-      <p className="timeline-hint">{stepsVisible ? "CNT wird tickweise als Treppe dargestellt." : "Bei großem ARR ist der CNT-Anstieg schematisch als Linie dargestellt."} Der Cursor zeigt stets denselben CNT-Stand wie die Registeranzeige.</p>
+      <p className="timeline-hint">{stepsVisible ? "CNT wird für jeden Zählschritt als Treppe dargestellt." : "Bei großem ARR ist der CNT-Anstieg schematisch als Linie dargestellt."} {ccr === 0 ? "CCR2 = 0: OC2REF bleibt inaktiv (0 %)." : ccr > arr ? "CCR2 > ARR: OC2REF bleibt durchgehend aktiv (100 %); innerhalb der Periode gibt es keine Abschaltschwelle." : "Die orange Linie markiert den Vergleichswert CCR2 und den Wechsel von OC2REF zu inaktiv."} Der Cursor zeigt denselben CNT-Stand wie die Registeranzeige.</p>
     </div>
   );
 }

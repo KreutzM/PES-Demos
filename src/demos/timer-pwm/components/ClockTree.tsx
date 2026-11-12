@@ -57,7 +57,7 @@ export default function ClockTree({ config, clock, activeTimer, psc, arr, onChan
           <h2 id="clock-tree-title">Woher bekommt der Timer seinen Takt?</h2>
           <p>Verändere die Bus-Prescaler und beobachte, wie sich die PWM-Frequenz bei <strong>unveränderten</strong> Timer-Registern verschiebt.</p>
         </div>
-        <button className="button button-ghost" type="button" onClick={() => onChange({ ...DEFAULT_CLOCK_CONFIG })}>↺ Praktikumsprofil</button>
+        <button className="button button-ghost" type="button" onClick={() => onChange({ ...DEFAULT_CLOCK_CONFIG })} title="Setzt nur das RCC-Taktprofil sowie den aktuellen Zählerzustand zurück">↺ RCC-Taktprofil zurücksetzen</button>
       </div>
       <div className="clock-controls">
         <label className="clock-select">SYSCLK
@@ -96,12 +96,12 @@ export default function ClockTree({ config, clock, activeTimer, psc, arr, onChan
           <BusPath name="TIM1" pclk={clock.apb2.pclkHz} timclk={clock.tim1Hz} active={activeTimer === "TIM1"} details={{div:config.apb2Div,multiplier:clock.apb2.timerMultiplier}} />
         </div>
       </div>
-      <p className="clock-rule"><strong>Timer-Regel:</strong> {rule}</p>
+      <p className="clock-rule"><strong>Timer-Regel:</strong> {rule} Änderungen am RCC-Taktprofil halten die Simulation an und setzen CNT sowie die Prescaler-Phase zurück.</p>
       {clock.warnings.length > 0 && <div className="clock-warnings" role="alert">
         <strong>Außerhalb der Hardware-Spezifikation:</strong> {clock.warnings.join(" ")} Die angezeigten Frequenzen sind in diesem Fall nur rechnerische Modellwerte.
       </div>}
       <div className="clock-comparison">
-        <div><span>Gleiche Register: PSC = {psc.toLocaleString("de-DE")}, ARR = {arr.toLocaleString("de-DE")}</span><small>Vergleich des PWM-Ausgangs bei beiden Timern</small></div>
+        <div><span>Gleiche Register: PSC = {psc.toLocaleString("de-DE")}, ARR = {arr.toLocaleString("de-DE")}</span><small>Vergleich der PWM-Frequenz bei identischen Registern</small></div>
         <div className={activeTimer === "TIM1" ? "comparison-active" : ""}>TIM1 <strong>{hz(pwm1)}</strong></div>
         <div className={activeTimer === "TIM2" ? "comparison-active" : ""}>TIM2 <strong>{hz(pwm2)}</strong></div>
       </div>
