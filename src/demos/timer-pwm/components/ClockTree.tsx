@@ -53,7 +53,7 @@ export default function ClockTree({ config, clock, activeTimer, psc, arr, onChan
     ? "TIMPRE = 1: Bei APB-Teiler /1, /2 oder /4 gilt TIMxCLK = HCLK; bei /8 oder /16 gilt TIMxCLK = 4 × PCLKx."
     : "TIMPRE = 0: Bei APB-Teiler /1 gilt TIMxCLK = PCLKx; ab /2 gilt TIMxCLK = 2 × PCLKx.";
   return (
-    <section className="panel clock-tree-panel" aria-labelledby="clock-tree-title">
+    <section id="lab-clock" tabIndex={-1} className="panel clock-tree-panel" aria-labelledby="clock-tree-title">
       <div className="clock-tree-title-row">
         <div>
           <div className="eyebrow">RCC / TAKTBAUM · STM32F429</div>

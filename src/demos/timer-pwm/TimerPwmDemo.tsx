@@ -197,6 +197,16 @@ export default function TimerPwmDemo() {
     initializeGuidedExperiment(0);
   }
 
+  function jumpToLabSection(id: string) {
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({
+      block: "start",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }
+
   function openFreeLab() {
     if (lessonView === "free") return;
     setPlaying(false);
@@ -253,7 +263,7 @@ export default function TimerPwmDemo() {
   ].join("\n");
 
   return (
-    <main id="inhalt" className={"container demo-main" + (lessonView === "guided" ? " guided-mode" : "")}>
+    <main id="inhalt" className={"container demo-main" + (lessonView === "guided" ? " guided-mode" : " free-lab")}>
       <a className="breadcrumb" href="#/">← Alle Demos</a>
       <div className="demo-heading">
         <div>
@@ -286,56 +296,56 @@ export default function TimerPwmDemo() {
 
       {lessonView === "free" && <>
       <div className="lesson-note" role="note">
-        <strong>Praktikumsprofil:</strong> SYSCLK 168 MHz, AHB ÷1, APB1 ÷4 und APB2 ÷2, TIMPRE = 0.
-        Die Timer erhalten ihren Eingangstakt aus dem RCC-Taktbaum, <strong>nicht automatisch aus SYSCLK</strong>.
-        Stelle unten andere Prescaler ein und beobachte die Auswirkung auf beide Timer.
+        <strong>RCC-Praktikumsprofil:</strong> SYSCLK 168 MHz · AHB ÷1 · APB1 ÷4 · APB2 ÷2 · TIMPRE = 0.
+        Register und Zähler sind hier direkt bedienbar; der RCC-Taktbaum und das Prescaler-Labor folgen als Vertiefungen.
       </div>
+      <nav className="lab-jump-nav" aria-label="Direkt zu einem Bereich im freien Labor">
+        <span className="lab-jump-label">Direkt zu</span>
+        <button type="button" onClick={() => jumpToLabSection("lab-register")}>Registern</button>
+        <button type="button" onClick={() => jumpToLabSection("lab-counter")}>CNT &amp; Steuerung</button>
+        <button type="button" onClick={() => jumpToLabSection("lab-waveform")}>Zeitdiagramm</button>
+        <button type="button" onClick={() => jumpToLabSection("lab-clock")}>RCC-Taktbaum</button>
+        <button type="button" onClick={() => jumpToLabSection("lab-prescaler")}>Prescaler-Labor</button>
+      </nav>
 
       <div className="learning-intro">
         <div className="intro-icon" aria-hidden="true">01</div>
         <div>
-          <h2>Zwei Fragen, zwei Zähler: Warum steht bei PSC und ARR jeweils „+1“?</h2>
-          <p>Wähle zunächst <strong>PSC = 3</strong> im Prescaler-Labor. Wie viele Eingangstakte
-          vergehen, bis sich CNT von 0 auf 1 erhöht? Untersuche anschließend <strong>ARR = 9,
-          CCR2 = 3</strong>: Bei welchem CNT-Wert wird das interne PWM-Referenzsignal OC2REF inaktiv?
-          Mit den Einzelschritt-Schaltflächen kannst du beides überprüfen.</p>
+          <h2>Frei experimentieren: Register ändern und das Signal beobachten</h2>
+          <p>Ändere zuerst <strong>ARR von 9 auf 19</strong> und beobachte Frequenz und Tastverhältnis bei unverändertem CCR2.
+          Nutze danach die Zählerschritte, das Zeitdiagramm oder die Sprungnavigation zu RCC und Prescaler.</p>
         </div>
       </div>
 
-      <ClockTree config={clockConfig} clock={clock} activeTimer={timer} psc={psc} arr={arr}
-        onChange={(next) => { resetCounter(); setClockConfig(next); }} />
-      <PrescalerPipeline timclkHz={timerClockHz} psc={psc} arr={arr} ccr={ccr}
-        state={counter} onClockStep={advanceInputCycles} onSmallExample={() => applyPreset("divider")} />
-
       <div className="demo-layout">
-        <section className="panel controls-panel" aria-labelledby="settings-title">
+        <section id="lab-register" tabIndex={-1} className="panel controls-panel" aria-labelledby="settings-title">
           <div className="panel-header">
             <div className="eyebrow">01 / KONFIGURATION</div>
             <h2 id="settings-title">Timer-Register</h2>
           </div>
-          <p className="register-reset-note">Register- und RCC-Änderungen pausieren die Animation. CNT, Prescaler-Phase und CNT-Rücksprünge beginnen wieder bei null. Das Modell verwendet die neu eingestellten Registerwerte nach diesem Neustart.</p>
+          <p id="register-reset-note" className="register-reset-note">Register- und RCC-Änderungen pausieren die Animation. CNT, Prescaler-Phase und CNT-Rücksprünge beginnen wieder bei null. Das Modell verwendet die neu eingestellten Registerwerte nach diesem Neustart.</p>
           <div className="field">
             <label htmlFor="timer">Timer</label>
-            <select id="timer" value={timer} onChange={(event) => changeTimer(event.target.value as TimerId)}>
+            <select id="timer" aria-describedby="timer-hint register-reset-note" value={timer} onChange={(event) => changeTimer(event.target.value as TimerId)}>
               <option value="TIM1">TIM1 · 16 Bit, APB2</option>
               <option value="TIM2">TIM2 · 32 Bit, APB1</option>
             </select>
-            <p className="field-hint">Beim Timerwechsel bleibt PSC erhalten; ARR und CCR2 werden nur bei Überschreiten der neuen Registerbreite begrenzt. CNT wird zurückgesetzt.</p>
+            <p id="timer-hint" className="field-hint">Beim Timerwechsel bleibt PSC erhalten; ARR und CCR2 werden nur bei Überschreiten der neuen Registerbreite begrenzt. CNT wird zurückgesetzt.</p>
           </div>
           <div className="field">
             <label htmlFor="psc">PSC <span>Prescaler</span></label>
-            <input id="psc" type="number" min="0" max="65535" step="1" value={psc} onChange={(event) => changePrescaler(Number(event.target.value))}/>
-            <p className="field-hint">CNT-Zähltaktfrequenz: f<sub>CNT</sub> = f<sub>TIM</sub> / (PSC + 1)</p>
+            <input id="psc" aria-describedby="psc-hint register-reset-note" type="number" min="0" max="65535" step="1" value={psc} onChange={(event) => changePrescaler(Number(event.target.value))}/>
+            <p id="psc-hint" className="field-hint">CNT-Zähltaktfrequenz: f<sub>CNT</sub> = f<sub>TIM</sub> / (PSC + 1)</p>
           </div>
           <div className="field">
             <label htmlFor="arr">ARR <span>Oberer CNT-Zählwert (Auto-Reload)</span></label>
-            <input id="arr" type="number" min="0" max={maxArr} step="1" value={arr} onChange={(event) => changePeriod(Number(event.target.value))}/>
-            <p className="field-hint">CNT zählt von 0 bis ARR, also ARR + 1 Zählschritte pro Periode. Eine ARR-Änderung verändert CCR2 nicht.</p>
+            <input id="arr" aria-describedby="arr-hint register-reset-note" type="number" min="0" max={maxArr} step="1" value={arr} onChange={(event) => changePeriod(Number(event.target.value))}/>
+            <p id="arr-hint" className="field-hint">CNT zählt von 0 bis ARR, also ARR + 1 Zählschritte pro Periode. Eine ARR-Änderung verändert CCR2 nicht.</p>
           </div>
           <div className="field">
             <label htmlFor="ccr">CCR2 <span>Vergleichswert für Kanal 2</span></label>
-            <input id="ccr" type="number" min="0" max={maxCcr} step="1" value={ccr} onChange={(event) => changeCompare(Number(event.target.value))}/>
-            <p className="field-hint">Aufwärtszählender PWM-Modus 1: Das interne Signal OC2REF ist aktiv, solange CNT &lt; CCR2. CCR2 darf größer als ARR sein.</p>
+            <input id="ccr" aria-describedby="ccr-hint register-reset-note" type="number" min="0" max={maxCcr} step="1" value={ccr} onChange={(event) => changeCompare(Number(event.target.value))}/>
+            <p id="ccr-hint" className="field-hint">Aufwärtszählender PWM-Modus 1: Das interne Signal OC2REF ist aktiv, solange CNT &lt; CCR2. CCR2 darf größer als ARR sein.</p>
           </div>
           {ccr > arr && <p className="register-compare-note" role="status">CCR2 ist größer als ARR: CNT erreicht diese Vergleichsschwelle nicht. Das interne OC2REF bleibt durchgehend aktiv (100 % Tastverhältnis).</p>}
           <div className="field slider-field">
@@ -344,13 +354,14 @@ export default function TimerPwmDemo() {
               value={result ? result.duty * 100 : 0}
               onChange={(event) => changeCompare(Math.min(maxCcr, Math.round(Number(event.target.value) / 100 * (arr + 1))))}
               aria-label="Tastverhältnis über CCR2 einstellen"
+              aria-describedby={arr === maxArr ? "duty-hint duty-limit-note" : "duty-hint"}
               aria-valuetext={result ? formatDutyPercent(result.duty) + " Prozent" : undefined}/>
             <div className="range-labels"><span>0 %</span><span>{arr === maxArr ? "max. < 100 %" : "100 %"}</span></div>
-            <p className="field-hint">CCR2 lässt sich nur in ganzen Registerschritten ändern. Das angezeigte Tastverhältnis kann deshalb vom eingestellten Prozentwert abweichen.</p>
-            {arr === maxArr && <p className="field-hint duty-limit-note">Bei ARR = Registermaximum ist CCR2 = ARR + 1 nicht darstellbar. Exakt 100 % sind hier nicht möglich; am Sliderende gilt der größte erreichbare CCR2-Wert.</p>}
+            <p id="duty-hint" className="field-hint">CCR2 lässt sich nur in ganzen Registerschritten ändern. Das angezeigte Tastverhältnis kann deshalb vom eingestellten Prozentwert abweichen.</p>
+            {arr === maxArr && <p id="duty-limit-note" className="field-hint duty-limit-note">Bei ARR = Registermaximum ist CCR2 = ARR + 1 nicht darstellbar. Exakt 100 % sind hier nicht möglich; am Sliderende gilt der größte erreichbare CCR2-Wert.</p>}
           </div>
-          <p className="preset-effects">Alle Voreinstellungen laden <strong>TIM1, das RCC-Praktikumsprofil (168 MHz), PSC, ARR, CCR2 und den Wiedergabemodus</strong> neu. Die Wiedergabe stoppt; CNT, Prescaler-Phase und CNT-Rücksprünge werden auf null gesetzt.</p>
-          <div className="preset-buttons" aria-label="Timer-Voreinstellungen">
+          <p id="preset-effects" className="preset-effects">Alle Voreinstellungen laden <strong>TIM1, das RCC-Praktikumsprofil (168 MHz), PSC, ARR, CCR2 und den Wiedergabemodus</strong> neu. Die Wiedergabe stoppt; CNT, Prescaler-Phase und CNT-Rücksprünge werden auf null gesetzt.</p>
+          <div className="preset-buttons" role="group" aria-label="Timer-Voreinstellungen" aria-describedby="preset-effects">
             <button type="button" className="button button-ghost" onClick={() => applyPreset("divider")}>Voreinstellung: PSC = 3 (÷4)</button>
             <button type="button" className="button button-ghost" onClick={() => applyPreset("steps")}>Voreinstellung: 10 Zählschritte · 30 %</button>
             <button type="button" className="button button-ghost" onClick={() => applyPreset("blink")}>Voreinstellung: 1 Hz · Blinken</button>
@@ -362,7 +373,7 @@ export default function TimerPwmDemo() {
         </section>
 
         <section className="output-column" aria-label="Timer-Simulation">
-          <section className="panel simulator-panel" aria-labelledby="sim-title">
+          <section id="lab-counter" tabIndex={-1} className="panel simulator-panel" aria-labelledby="sim-title">
             <div className="panel-header">
               <div className="eyebrow">02 / ZÄHLWERK</div>
               <h2 id="sim-title">Aktueller CNT-Zählerstand</h2>
@@ -408,7 +419,7 @@ export default function TimerPwmDemo() {
             <p className="observation" aria-label="Erklärung des aktuellen Zählerzustands">{observation}</p>
           </section>
 
-          <section className="panel">
+          <section id="lab-waveform" tabIndex={-1} className="panel">
             <div className="panel-header">
               <div className="eyebrow">03 / SYNCHRONISIERTES ZEITDIAGRAMM</div>
               <h2>CNT, CCR2 und PWM Mode 1</h2>
@@ -468,6 +479,21 @@ export default function TimerPwmDemo() {
             </>}
           </section>
         </section>
+      </div>
+      <div className="lab-deep-dive" aria-labelledby="lab-deep-dive-title">
+        <div className="lab-deep-dive-heading">
+          <div>
+            <div className="eyebrow">VERTIEFUNGEN · TAKTWEG</div>
+            <h2 id="lab-deep-dive-title">RCC-Taktbaum und Prescaler verstehen</h2>
+            <p>Beide Bereiche arbeiten mit derselben Timer-Konfiguration wie die Register und das Zeitdiagramm.</p>
+          </div>
+          <button type="button" className="button button-secondary" onClick={() => jumpToLabSection("lab-register")}>↑ Zur Registersteuerung</button>
+        </div>
+        <ClockTree config={clockConfig} clock={clock} activeTimer={timer} psc={psc} arr={arr}
+          onChange={(next) => { resetCounter(); setClockConfig(next); }} />
+        <PrescalerPipeline timclkHz={timerClockHz} psc={psc} arr={arr} ccr={ccr}
+          state={counter} onClockStep={advanceInputCycles} onSmallExample={() => applyPreset("divider")} />
+        <button type="button" className="button button-secondary lab-back-to-register" onClick={() => jumpToLabSection("lab-register")}>↑ Zurück zu den Registern</button>
       </div>
       <p className="disclaimer">Der Prescaler wird für das Lernexperiment als bereits geladener Teiler behandelt. Beim realen STM32 werden PSC-Schreibzugriffe erst mit dem Update-Ereignis wirksam; die hier simulierte Phase beginnt nach jedem Registerwechsel wieder bei null. Taktbaum-Modellgrenzen: HSE/HSI/PLL-Generierung, Wechsel zur Laufzeit, Overdrive und Flash-Waitstates sind nicht simuliert. Modellgrenzen der Timer-Peripherie: idealisierter Upcounting-Betrieb mit PWM Mode 1 und sofort gültigen PSC-/ARR-/CCR-Werten nach Neustart. Register-Preload, Update-Events bei laufendem Timer, Output-Enable und das vollständige Pin-Multiplexing werden noch nicht dynamisch simuliert. Die Browser-Zeitrafferfunktion ist unabhängig von der realen Timer-Taktfrequenz.</p>
       </>}
