@@ -10,25 +10,17 @@ function Home() {
     <main id="inhalt" className="container">
       <section className="hero">
         <div className="eyebrow"><span className="eyebrow-dot" /> PRAKTIKUM EINGEBETTETE SYSTEME</div>
-        <h1>Hardware verstehen.<br /><span className="accent">Selbst ausprobieren.</span></h1>
-        <p className="hero-text">
-          Interaktive Experimente zu Mikrocontrollern und eingebetteten Systemen.
-          Entdecke, was in der Hardware passiert – bevor du den Code auf dem Board ausführst.
-        </p>
+        <h1>Interaktive Experimente zur STM32F429-Hardware</h1>
+        <p className="hero-text">Entdecken und besser verstehen, was im Controller passiert.</p>
         <div className="hero-actions">
-          <a className="button button-primary" href="#/timer-pwm">Timer &amp; PWM entdecken <span aria-hidden="true">↗</span></a>
-          <a className="button button-secondary" href="https://github.com/KreutzM/PES-Demos" target="_blank" rel="noopener noreferrer">Quellcode auf GitHub</a>
+          <a className="button button-primary" href="#/timer-pwm">Timer &amp; PWM öffnen</a>
         </div>
       </section>
       <section className="section" aria-labelledby="demos-title">
         <div className="section-heading">
-          <div>
-            <div className="eyebrow">DEMO-BIBLIOTHEK</div>
-            <h2 id="demos-title">Interaktive Lernmodule</h2>
-          </div>
-          <p>Die Sammlung wird schrittweise erweitert.</p>
+          <h2 id="demos-title">Experiment</h2>
         </div>
-        <div className="cards">
+        <div className="cards home-cards">
           <a href="#/timer-pwm" className="demo-card">
             <div className="card-visual" aria-hidden="true">
               <svg viewBox="0 0 360 112" role="presentation">
@@ -37,19 +29,11 @@ function Home() {
               </svg>
             </div>
             <div className="card-body">
-              <div className="card-meta"><span className="tag">INTERAKTIV</span><span className="chip">STM32F429</span></div>
-              <h3>Timer &amp; PWM <span aria-hidden="true">↗</span></h3>
-              <p>Prescaler, Auto-Reload, Compare-Register und PWM-Signal zusammen erleben.</p>
+              <div className="card-meta"><span className="chip">STM32F429</span></div>
+              <h3>Timer &amp; PWM</h3>
+              <p>Taktbaum, Prescaler, ARR, CCR2 und PWM-Modus 1.</p>
             </div>
           </a>
-          <div className="demo-card upcoming">
-            <div className="card-visual upcoming-visual"><span aria-hidden="true">+</span></div>
-            <div className="card-body">
-              <div className="card-meta"><span className="chip">IN PLANUNG</span></div>
-              <h3>Weitere PES-Demos</h3>
-              <p>Später können hier unter anderem ADC, Interrupts und weitere Hardwaremodule folgen.</p>
-            </div>
-          </div>
         </div>
       </section>
     </main>
@@ -78,7 +62,7 @@ export default function App() {
         </div>
       </header>
       {route === "/timer-pwm" ? <TimerPwmDemo /> : <Home />}
-      <footer className="site-footer"><div className="container">PES-Demos · Lernwerkzeuge für das Praktikum Eingebettete Systeme · <a href="https://github.com/KreutzM/PES-Demos">Open Source auf GitHub</a></div></footer>
+      <footer className="site-footer"><div className="container">PES-Demos · Praktikum Eingebettete Systeme</div></footer>
     </div>
   );
 }

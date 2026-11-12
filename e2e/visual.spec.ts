@@ -16,18 +16,44 @@ test("Landingpage und Timer-Labor sind erreichbar und sichtbar", async ({ page }
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/PES-Demos/");
-  await expect(page.locator(".hero h1")).toContainText("Hardware verstehen");
-  await expect(page.getByRole("link", { name: /Timer & PWM entdecken/ })).toBeVisible();
+  await expect(page.locator(".hero h1")).toHaveText("Interaktive Experimente zur STM32F429-Hardware");
+  await expect(page.locator(".hero .hero-text")).toHaveText(
+    "Entdecken und besser verstehen, was im Controller passiert.");
+  await expect(page.getByRole("link", { name: "Timer & PWM öffnen" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Timer & PWM", exact: true })).toHaveCount(1);
+  await expect(page.locator("a.demo-card[href='#/timer-pwm']")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Experiment", exact: true })).toBeVisible();
+  await expect(page.getByText(/Die Sammlung wird schrittweise erweitert/)).toHaveCount(0);
+  await expect(page.getByText(/Weitere PES-Demos/)).toHaveCount(0);
+  await expect(page.locator('a[href*="github.com/KreutzM/PES-Demos"]')).toHaveCount(0);
   await capture(page, info.project.name, "landing");
 
-  await page.getByRole("link", { name: /Timer & PWM entdecken/ }).click();
+  await page.getByRole("link", { name: "Timer & PWM öffnen" }).click();
   await expect(page.getByRole("heading", { name: "Timer & PWM" })).toBeVisible();
+  await expect(page.locator('a[href*="github.com/KreutzM/PES-Demos"]')).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /Wie wirkt PSC = 3 auf den Zähler/ })).toBeVisible();
   await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Woher bekommt der Timer seinen Takt?" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Warum immer „+ 1“?" })).toBeVisible();
   await capture(page, info.project.name, "timer-overview");
   expect(errors, "Keine ungefangenen Browser-JavaScriptfehler").toEqual([]);
+});
+
+test("Kopf-Navigation: von Übersicht zu Timer & PWM und zurück", async ({ page }) => {
+  await page.goto("/PES-Demos/#/");
+  const header = page.getByRole("navigation", { name: "Hauptnavigation" });
+  await expect(header.getByRole("link", { name: "Übersicht" })).toHaveAttribute("aria-current", "page");
+  await header.getByRole("link", { name: "Timer & PWM" }).click();
+  await expect(page).toHaveURL(/#\/timer-pwm$/);
+  await expect(page.getByRole("heading", { name: "Timer & PWM", exact: true })).toBeVisible();
+  await expect(header.getByRole("link", { name: "Timer & PWM" })).toHaveAttribute("aria-current", "page");
+
+  await header.getByRole("link", { name: "Übersicht" }).click();
+  await expect(page.getByRole("heading", {
+    name: "Interaktive Experimente zur STM32F429-Hardware",
+  })).toBeVisible();
+  await expect(header.getByRole("link", { name: "Übersicht" })).toHaveAttribute("aria-current", "page");
+  await expect(page.locator('a[href*="github.com/KreutzM/PES-Demos"]')).toHaveCount(0);
 });
 
 test("Taktbaum: TIM2 zunächst halb so schnell, mit TIMPRE wieder gleich schnell", async ({ page }, info) => {
@@ -576,4 +602,27 @@ test("DOT-Signalweg ist mobil aufklappbar ohne horizontale Überbreite", async (
     await details.scrollIntoViewIfNeeded();
     await capture(page, info.project.name, "dot-path-mobile-" + width);
   }
+});
+
+test("Startseite 320–1280 px: Text, Karte und Navigation ohne Repository-Link", async ({ page }, info) => {
+  for (const width of [320, 360, 393, 768, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/PES-Demos/#/");
+    await expect(page.getByRole("heading", {
+      name: "Interaktive Experimente zur STM32F429-Hardware",
+    })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Timer & PWM öffnen" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Timer & PWM", exact: true })).toHaveCount(1);
+    await expect(page.locator("a.demo-card[href='#/timer-pwm']")).toHaveCount(1);
+    await expect(page.locator('a[href*="github.com/KreutzM/PES-Demos"]')).toHaveCount(0);
+    const overflow = await page.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, "Startseite bei " + width + " px").toBeLessThanOrEqual(2);
+    if (width === 320 || width === 393 || width === 1280) {
+      await capture(page, info.project.name, "homepage-" + width + "px");
+    }
+  }
+  await page.locator("a.demo-card").click();
+  await expect(page.getByRole("heading", { name: "Timer & PWM" })).toBeVisible();
+  await expect(page.locator('a[href*="github.com/KreutzM/PES-Demos"]')).toHaveCount(0);
 });
