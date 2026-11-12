@@ -22,6 +22,8 @@ test("Landingpage und Timer-Labor sind erreichbar und sichtbar", async ({ page }
 
   await page.getByRole("link", { name: /Timer & PWM entdecken/ }).click();
   await expect(page.getByRole("heading", { name: "Timer & PWM" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Warum teilt PSC = 3/ })).toBeVisible();
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Woher bekommt der Timer seinen Takt?" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Warum immer „+ 1“?" })).toBeVisible();
   await capture(page, info.project.name, "timer-overview");
@@ -30,6 +32,7 @@ test("Landingpage und Timer-Labor sind erreichbar und sichtbar", async ({ page }
 
 test("Taktbaum: TIM2 zunächst halb so schnell, mit TIMPRE wieder gleich schnell", async ({ page }, info) => {
   await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
   await page.getByRole("button", { name: /1 Hz · Blinken/ }).click();
   await expect(page.locator(".metric.featured strong")).toHaveText("1 Hz");
   await page.locator("#timer").selectOption("TIM2");
@@ -42,6 +45,7 @@ test("Taktbaum: TIM2 zunächst halb so schnell, mit TIMPRE wieder gleich schnell
 
 test("Vier Eingangstaktimpulse bei PSC=3 ergeben erst einen CNT-Zählschritt", async ({ page }, info) => {
   await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
   const upperButton = page.getByRole("button", { name: /Beispiel: PSC = 3/ });
   await expect(upperButton.locator(".divider-preset-warning")).toBeVisible();
   await expect(upperButton).toContainText("zurückgesetzt");
@@ -71,6 +75,7 @@ test("Vier Eingangstaktimpulse bei PSC=3 ergeben erst einen CNT-Zählschritt", a
 
 test("Keine horizontale Überbreite bei Desktop- und Mobilansicht", async ({ page }) => {
   await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
   await expect(page.locator(".divider-lab")).toBeVisible();
   const dimensions = await page.evaluate(() => ({
     documentWidth: document.documentElement.scrollWidth,
@@ -81,6 +86,7 @@ test("Keine horizontale Überbreite bei Desktop- und Mobilansicht", async ({ pag
 
 test("Isolierte ARR-Änderung lässt CCR2 stabil; CCR2 über ARR erzeugt 100 % ohne Abschaltflanke", async ({ page }, info) => {
   await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
   await expect(page.locator("#arr")).toHaveValue("9");
   await expect(page.locator("#ccr")).toHaveValue("3");
   await page.locator("#arr").fill("19");
@@ -101,6 +107,7 @@ test("Isolierte ARR-Änderung lässt CCR2 stabil; CCR2 über ARR erzeugt 100 % o
 
 test("Voreinstellung beschreibt Nebenwirkungen und stellt Timer, RCC, Register, Zählerstand wieder her", async ({ page }, info) => {
   await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
   await page.locator("#timer").selectOption("TIM2");
   const apb1 = page.locator(".clock-controls .clock-select").nth(2).locator("select");
   const apb2 = page.locator(".clock-controls .clock-select").nth(3).locator("select");
@@ -147,6 +154,7 @@ test("Voreinstellung beschreibt Nebenwirkungen und stellt Timer, RCC, Register, 
 
 test("Registeränderungen setzen CNT und Prescalerphase kontrolliert zurück", async ({ page }) => {
   await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
   await page.getByRole("button", { name: /Beispiel: PSC = 3/ }).click();
   const step = page.getByRole("button", { name: "+1 Eingangstaktimpuls" });
   for (let i = 0; i < 4; i++) await step.click();
@@ -159,6 +167,7 @@ test("Registeränderungen setzen CNT und Prescalerphase kontrolliert zurück", a
 
 test("PWM-Grenzen: kein falscher 100-%-Wert, keine Abschaltmarkierung ohne Ereignis", async ({ page }) => {
   await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
   const marker = page.locator(".counter-progress i");
   const compareGuide = page.locator(".waveform .compare-guide");
   await page.locator("#ccr").fill("0");
@@ -192,4 +201,79 @@ test("PWM-Grenzen: kein falscher 100-%-Wert, keine Abschaltmarkierung ohne Ereig
   await page.locator("#ccr").fill("4294967295");
   await expect(page.locator("label[for='duty']")).toContainText("< 100 %");
   await expect(page.locator(".metric.featured strong")).not.toHaveText("0 Hz");
+});
+
+test("Geführter Einstieg: PSC, ARR, CCR2, Frequenz als Vorhersage–Experiment–Erklärung", async ({ page }, info) => {
+  await page.goto("/PES-Demos/#/timer-pwm");
+  await expect(page.getByRole("heading", { name: /Warum teilt PSC = 3/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Woher bekommt der Timer seinen Takt/ })).toHaveCount(0);
+  await expect(page.getByTestId("guided-cnt")).toHaveText("0");
+  await expect(page.getByRole("button", { name: /Timer-Eingangstaktimpuls/ })).toBeDisabled();
+  await capture(page, info.project.name, "guided-psc-start");
+
+  await page.getByRole("radio", { name: "4 Impulse" }).check();
+  const inputStep = page.getByRole("button", { name: "+1 Timer-Eingangstaktimpuls" });
+  for (let i = 1; i <= 3; i++) {
+    await inputStep.click();
+    await expect(page.getByTestId("guided-cnt")).toHaveText("0");
+    await expect(page.locator(".guided-state")).toContainText(i + " / 4");
+  }
+  await inputStep.click();
+  await expect(page.getByTestId("guided-cnt")).toHaveText("1");
+  await expect(page.locator(".guided-result")).toContainText("Deine Vorhersage war richtig");
+  await capture(page, info.project.name, "guided-psc-observed");
+  await page.getByRole("button", { name: /Nächstes Experiment/ }).click();
+
+  await expect(page.getByRole("heading", { name: /Warum zählt ARR = 9/ })).toBeVisible();
+  await page.getByRole("radio", { name: "0", exact: true }).check();
+  await page.getByRole("button", { name: "Bis CNT = 9" }).click();
+  await expect(page.getByTestId("guided-cnt")).toHaveText("9");
+  await page.getByRole("button", { name: "+1 CNT-Zählschritt" }).click();
+  await expect(page.getByTestId("guided-cnt")).toHaveText("0");
+  await expect(page.getByTestId("guided-wraps")).toHaveText("1");
+  await expect(page.locator(".guided-result")).toContainText("ARR → 0");
+  await page.getByRole("button", { name: /Nächstes Experiment/ }).click();
+
+  await expect(page.getByRole("heading", { name: "Wann wird OC2REF inaktiv?" })).toBeVisible();
+  await page.getByRole("radio", { name: "CNT = 3" }).check();
+  await expect(page.getByTestId("guided-oc2ref")).toContainText("1 · aktiv");
+  await page.getByRole("button", { name: "Bis CNT = CCR2" }).click();
+  await expect(page.getByTestId("guided-cnt")).toHaveText("3");
+  await expect(page.getByTestId("guided-oc2ref")).toContainText("0 · inaktiv");
+  await expect(page.locator(".guided-result")).toContainText("30 %");
+  await capture(page, info.project.name, "guided-compare-observed");
+  await page.getByRole("button", { name: /Nächstes Experiment/ }).click();
+
+  await expect(page.getByRole("heading", { name: /Wie beeinflussen PSC und ARR/ })).toBeVisible();
+  await expect(page.getByTestId("guided-frequency")).toHaveText("4,2 MHz");
+  await page.getByRole("radio", { name: "Sie halbiert sich" }).check();
+  await page.getByRole("button", { name: "PSC auf 7 setzen" }).click();
+  await expect(page.getByTestId("guided-frequency")).toHaveText("2,1 MHz");
+  await page.getByRole("button", { name: "ARR auf 19 setzen" }).click();
+  await expect(page.getByTestId("guided-frequency")).toHaveText("1,05 MHz");
+  await expect(page.getByTestId("guided-ccr")).toHaveText("3");
+  await expect(page.locator(".guided-result")).toContainText("nacheinander halbiert");
+  await capture(page, info.project.name, "guided-frequency-observed");
+});
+
+test("Geführter Modus erhält die vorherige Konfiguration des freien Labors", async ({ page }) => {
+  await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
+  await expect(page.locator("#psc")).toHaveValue("16799");
+  await page.locator("#timer").selectOption("TIM2");
+  await page.locator("#psc").fill("7");
+  await page.locator("#arr").fill("19");
+  await page.locator("#ccr").fill("4");
+  await page.locator(".clock-checkbox input").check();
+  await page.getByRole("button", { name: "Geführter Einstieg", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /Warum teilt PSC = 3/ })).toBeVisible();
+  await expect(page.locator("#psc")).toHaveCount(0);
+  await page.getByRole("button", { name: "4. Frequenz" }).click();
+  await expect(page.getByTestId("guided-frequency")).toHaveText("4,2 MHz");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
+  await expect(page.locator("#timer")).toHaveValue("TIM2");
+  await expect(page.locator("#psc")).toHaveValue("7");
+  await expect(page.locator("#arr")).toHaveValue("19");
+  await expect(page.locator("#ccr")).toHaveValue("4");
+  await expect(page.locator(".clock-checkbox input")).toBeChecked();
 });

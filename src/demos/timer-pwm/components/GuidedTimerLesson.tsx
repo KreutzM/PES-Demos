@@ -181,6 +181,7 @@ export default function GuidedTimerLesson({
                 <div><span>PSC (Teiler PSC + 1)</span><strong data-testid="guided-psc">{psc} (÷{psc + 1})</strong></div>
                 <div><span>ARR (Zählschritte ARR + 1)</span><strong data-testid="guided-arr">{arr} ({arr + 1})</strong></div>
                 <div><span>PWM-Frequenz</span><strong data-testid="guided-frequency">{formatMHz(result.pwmHz)}</strong></div>
+                <div><span>CCR2 (unverändert)</span><strong data-testid="guided-ccr">{ccr}</strong></div>
               </div>
               <div className="guided-actions">
                 <button type="button" className="button button-primary"
