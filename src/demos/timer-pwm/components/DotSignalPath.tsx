@@ -24,7 +24,7 @@ export default function DotSignalPath({
       <summary>
         <span>
           <strong>Signalweg verstehen</strong>
-          <small>Warum leuchtet DOT bei OC2REF = 1?</small>
+          <small>{connected ? "Warum leuchtet DOT bei OC2REF = 1 (im TIM1-Modell)?" : "Warum hat TIM2_CH2 keinen DOT-Pfad über PE11?"}</small>
         </span>
         <span className="dot-signal-path-toggle" aria-hidden="true">⌄</span>
       </summary>
@@ -49,10 +49,10 @@ export default function DotSignalPath({
           </div>
           <span className="dot-path-arrow" aria-hidden="true">→</span>
           <div className="dot-path-stage">
-            <span className="dot-path-stage-label">2 · Ausgangsstufe</span>
-            <strong>OCPolarity LOW</strong>
-            <small>Invertiert den OC2REF-Pegel</small>
-            <span className="dot-path-stage-description">{connected ? "CC2E und MOE für TIM1 als freigegeben angenommen" : "Interner TIM2-Kanal; kein PE11-Ausgang"}</span>
+            <span className="dot-path-stage-label">2 · {connected ? "Ausgangsstufe" : "Keine PE11-Ausgabe"}</span>
+            <strong>{connected ? "OCPolarity LOW" : "TIM2_CH2 intern"}</strong>
+            <small>{connected ? "Invertiert den OC2REF-Pegel" : "Kein Pegel am PE11-DOT-Anschluss"}</small>
+            <span className="dot-path-stage-description">{connected ? "CC2E und MOE für TIM1 als freigegeben angenommen" : "TIM2_CH2 ist nicht nach PE11 geroutet"}</span>
           </div>
           <span className="dot-path-arrow" aria-hidden="true">→</span>
           <div className={"dot-path-stage" + (connected ? "" : " dot-path-disconnected")} data-testid="path-pe11">
@@ -78,7 +78,7 @@ export default function DotSignalPath({
           )}
         </div>
 
-        <div className="dot-path-table-wrap">
+        {connected ? <div className="dot-path-table-wrap">
           <table className="dot-path-table">
             <caption>Signalzustände für TIM1_CH2 mit Ausgangspolarität LOW und aktivierter DOT-Anzeigenstelle</caption>
             <thead>
@@ -104,14 +104,18 @@ export default function DotSignalPath({
               </tr>
             </tbody>
           </table>
-        </div>
+        </div> : <p className="dot-path-unconnected" data-testid="tim2-table-explanation">
+          Die Zuordnung OC2REF → PE11 → DOT gilt ausschließlich für das TIM1-Beispiel.
+          Für TIM2 existieren hier weder ein modellierter PE11-Pegel noch eine
+          DOT-LED-Zustandstabelle.
+        </p>}
 
-        <p className="dot-path-explanation">
+        {connected && <p className="dot-path-explanation">
           <strong>Warum zwei Umkehrungen?</strong> Ausgangspolarität LOW erzeugt bei
           OC2REF = 1 einen LOW-Pegel an PE11. Die low-aktive DOT-Beschaltung
           interpretiert gerade diesen LOW-Pegel als „Segment AN“. Das sind zwei
           logische Zuordnungen – <strong>keine Behauptung über zwei reale Inverterbausteine</strong>.
-        </p>
+        </p>}
         <p className="dot-path-assumptions">
           <strong>Modellannahmen:</strong> TIM1_CH2 ist über AF1 auf PE11 geschaltet,
           der Timer-Ausgang ist freigegeben (CC2E/MOE), und eine DOT-Anzeigenstelle

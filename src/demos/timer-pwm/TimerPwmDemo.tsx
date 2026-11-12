@@ -463,20 +463,22 @@ export default function TimerPwmDemo() {
               <p>{pe11Connected
                 ? "TIM1_CH2 → AF1 → PE11. Die LED ist low-aktiv. Wir setzen eine aktivierte Anzeigenstelle und freigeschalteten TIM1-Ausgang voraus (CC2E/MOE)."
                 : "TIM2_CH2 liegt nicht auf PE11. Deshalb bleibt das virtuelle DOT-Segment unverbunden; oben wird trotzdem das interne PWM-Signal simuliert."}</p>
-              <p className="field-hint">Links: momentaner LED-Zustand gemäß CNT. Rechts: gemitteltes Helligkeitsmodell, nur bei ausreichend hoher PWM-Frequenz sinnvoll.</p>
+              <p className="field-hint">{pe11Connected
+                  ? "Links: momentaner LED-Zustand gemäß CNT. Rechts: gemitteltes Helligkeitsmodell, nur bei ausreichend hoher PWM-Frequenz sinnvoll."
+                  : "Beide LED-Anzeigen sind für TIM2 nicht verbunden; es wird kein PE11-Pegel und kein LED-Mittelwert simuliert."}</p>
             </div>
             <div className="led-pair">
               <div className="led-visual">
-                <div className="led-frame" role="img" aria-label={"LED momentan " + (pe11Connected && active ? "eingeschaltet" : "ausgeschaltet")}>
+                <div className="led-frame" role="img" aria-label={!pe11Connected ? "DOT nicht verbunden: TIM2_CH2 hat keinen Signalpfad über PE11" : "LED momentan " + (active ? "eingeschaltet" : "ausgeschaltet")}>
                   <span className="led" style={{ opacity: pe11Connected && active ? 1 : 0.12, boxShadow: pe11Connected && active ? "0 0 25px rgba(245,65,78,.75)" : "none" }}/>
                 </div>
-                <span>Momentan</span>
+                <span>{pe11Connected ? "Momentan" : "Nicht verbunden"}</span>
               </div>
               <div className="led-visual">
-                <div className="led-frame" role="img" aria-label="Vereinfachtes Modell der zeitlich gemittelten Helligkeit">
+                <div className="led-frame" role="img" aria-label={pe11Connected ? "Vereinfachtes Modell der zeitlich gemittelten Helligkeit" : "Kein Helligkeitsmittelwert: TIM2_CH2 ist nicht mit dem DOT an PE11 verbunden"}>
                   <span className="led" style={{ opacity: pe11Connected && result ? Math.max(0.12, result.duty) : 0.12, boxShadow: pe11Connected && result ? "0 0 " + (3 + 25 * result.duty) + "px rgba(245,65,78,.55)" : "none" }}/>
                 </div>
-                <span>Mittelwert</span>
+                <span>{pe11Connected ? "Mittelwert" : "Kein Mittelwert"}</span>
               </div>
             </div>
             </div>

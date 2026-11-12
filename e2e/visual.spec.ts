@@ -485,6 +485,7 @@ test("DOT-Signalweg: interne Referenz, PE11-Pegel und low-aktive LED bleiben syn
   const details = page.getByTestId("dot-signal-path");
   const summary = details.locator("summary");
   await expect(details).not.toHaveAttribute("open", "");
+  await expect(summary).toContainText("Warum leuchtet DOT bei OC2REF = 1 (im TIM1-Modell)?");
   await summary.click();
   await expect(details).toHaveAttribute("open", "");
   await expect(details.getByTestId("path-oc2ref")).toContainText("OC2REF = 1");
@@ -525,15 +526,36 @@ test("DOT-Signalweg: interne Referenz, PE11-Pegel und low-aktive LED bleiben syn
   await expect(details.getByTestId("path-pe11")).toContainText("PE11: nicht verbunden");
   await expect(details.getByTestId("path-dot")).toContainText("DOT: nicht verbunden");
   await expect(details.getByTestId("path-current-state")).toContainText("keine Verbindung");
+  await expect(details.locator(".dot-path-table")).toHaveCount(0);
+  await expect(details.locator(".dot-path-row-active")).toHaveCount(0);
+  await expect(details.getByTestId("tim2-table-explanation")).toContainText("ausschließlich für das TIM1-Beispiel");
   await expect(page.locator(".led-visual").first().getByRole("img")).toHaveAttribute(
-    "aria-label", "LED momentan ausgeschaltet");
-  await details.scrollIntoViewIfNeeded();
-  await capture(page, info.project.name, "dot-path-tim2-disconnected");
+    "aria-label", "DOT nicht verbunden: TIM2_CH2 hat keinen Signalpfad über PE11");
+  await expect(page.locator(".led-visual").nth(1).getByRole("img")).toHaveAttribute(
+    "aria-label", "Kein Helligkeitsmittelwert: TIM2_CH2 ist nicht mit dem DOT an PE11 verbunden");
+  await expect(page.locator(".led-visual").first()).toContainText("Nicht verbunden");
+  await expect(page.locator(".led-visual").nth(1)).toContainText("Kein Mittelwert");
 
-  // A native details/summary is operable with a keyboard, no separate button needed.
+  // Auch wenn das interne Referenzsignal auf 0 wechselt, bleibt der PE11-Pfad getrennt.
+  await page.locator("#ccr").fill("0");
+  await expect(details.getByTestId("path-oc2ref")).toContainText("OC2REF = 0");
+  await expect(details.getByTestId("path-pe11")).toContainText("PE11: nicht verbunden");
+  await expect(details.getByTestId("path-dot")).toContainText("DOT: nicht verbunden");
+  await expect(details.locator(".dot-path-table")).toHaveCount(0);
+  await expect(page.locator(".led-visual").first().getByRole("img")).toHaveAttribute(
+    "aria-label", "DOT nicht verbunden: TIM2_CH2 hat keinen Signalpfad über PE11");
+
+  // Zusammengeklappt ist bereits der erste Erklärungssatz timerabhängig.
   await summary.focus();
   await page.keyboard.press("Enter");
   await expect(details).not.toHaveAttribute("open", "");
+  await expect(summary).toContainText("Warum hat TIM2_CH2 keinen DOT-Pfad über PE11?");
+  await details.scrollIntoViewIfNeeded();
+  await capture(page, info.project.name, "dot-path-tim2-disconnected");
+
+  // A native details/summary is operable with a keyboard in both directions.
+  await page.keyboard.press("Enter");
+  await expect(details).toHaveAttribute("open", "");
 });
 
 test("DOT-Signalweg ist mobil aufklappbar ohne horizontale Überbreite", async ({ page }, info) => {
