@@ -95,3 +95,9 @@ Der Timer/PWM-Demonstrator startet mit einem **geführten Einstiegsmodus**. Vier
 Die Lernkonfiguration verwendet **TIM1, Standard-RCC, PSC=3, ARR=9, CCR2=3**. Die Simulation selbst verwendet dieselbe Timer- und Prescalerberechnung wie das freie Labor (keine zweite Hardware-Engine). Ein Wechsel zum **freien Labor** stellt dessen zuvor eingestellte Register und das RCC-Profil wieder her. Im freien Labor bleiben RCC-Taktbaum, Prescaler-Pipeline, Register-/PWM-Steuerung, LED-Modell, Zeitdiagramm und HAL-Ausschnitt erhalten.
 
 Der geführte Modus ist ein didaktisches Angebot, keine Speicherung oder Benotung persönlicher Lernfortschritte. Abgebildet sind weiterhin die im freien Labor dokumentierten Hardwarevereinfachungen.
+
+## Free-Lab-Navigation und Responsive-Verhalten (Issue #11)
+
+Im **freien Labor** erscheinen Registersteuerung, CNT-Zähler, Zeitdiagramm und Kennwerte zuerst. Danach folgen die vollständigen Vertiefungen für **RCC-Taktbaum** und **Prescaler**; ihre Rechen- und Eingabefunktionen bleiben unverändert. Die Sprungnavigation bedient die Bereiche ohne Routenwechsel (die Anwendung nutzt Hash-Routing) und bewegt den Tastaturfokus zum gewählten Abschnitt. Aus den Vertiefungen gibt es einen direkten Rückweg zu den Registern.
+
+Register-Eingaben referenzieren ihre Erklärtexte über `aria-describedby`; mobile Layouts, Textgrößen und Tasten sind auf **320 bis 1280 px** ausgerichtet. E2E prüft die Navigation, die unabhängige ARR/CCR2-Bearbeitung und die horizontale Breite in beiden Modi. Diese Änderungen betreffen Layout/Bedienbarkeit, **nicht** die Timer-Berechnungen.
