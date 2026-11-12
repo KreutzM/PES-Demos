@@ -476,10 +476,26 @@ button:disabled { opacity:.45; cursor:not-allowed; }
   .free-lab .clock-path { gap:5px; padding:6px; }
   .free-lab .clock-path .clock-node { padding:6px; }
   .free-lab .clock-path .clock-node-value { font-size:13px; }
-  .free-lab .clock-node small { font-size:10px; }
+  .free-lab .clock-node small { font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
   .free-lab .divider-equations { grid-template-columns:minmax(0,1fr); }
 }
 @media(prefers-reduced-motion:reduce) {
   html { scroll-behavior:auto; }
   .free-lab .counter-progress span { transition:none; }
 }
+
+/* Review #12: show derived results and a one-tap route at the register inputs. */
+.lab-local-feedback {
+  margin:0 0 19px; padding:12px 13px; border-radius:10px;
+  border:1px solid #376a70; background:#14353e; color:#d6f0ed;
+  font-size:13px; line-height:1.65;
+}
+.lab-local-feedback output { display:block; overflow-wrap:anywhere; }
+.lab-local-feedback output strong { color:#83f4df; }
+.lab-local-jumps { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.lab-local-jumps button {
+  flex:1 1 125px; min-height:44px; padding:8px 10px;
+  font:inherit; font-weight:700; font-size:12px; color:#e9fcf7;
+  background:#1a4955; border:1px solid #4c9c9b; border-radius:8px; cursor:pointer;
+}
+.lab-local-jumps button:hover { background:#26606b; }

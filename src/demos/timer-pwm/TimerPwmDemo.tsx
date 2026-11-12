@@ -339,13 +339,24 @@ export default function TimerPwmDemo() {
           </div>
           <div className="field">
             <label htmlFor="arr">ARR <span>Oberer CNT-Zählwert (Auto-Reload)</span></label>
-            <input id="arr" aria-describedby="arr-hint register-reset-note" type="number" min="0" max={maxArr} step="1" value={arr} onChange={(event) => changePeriod(Number(event.target.value))}/>
+            <input id="arr" aria-describedby="arr-hint register-reset-note lab-local-values" type="number" min="0" max={maxArr} step="1" value={arr} onChange={(event) => changePeriod(Number(event.target.value))}/>
             <p id="arr-hint" className="field-hint">CNT zählt von 0 bis ARR, also ARR + 1 Zählschritte pro Periode. Eine ARR-Änderung verändert CCR2 nicht.</p>
           </div>
           <div className="field">
             <label htmlFor="ccr">CCR2 <span>Vergleichswert für Kanal 2</span></label>
-            <input id="ccr" aria-describedby="ccr-hint register-reset-note" type="number" min="0" max={maxCcr} step="1" value={ccr} onChange={(event) => changeCompare(Number(event.target.value))}/>
+            <input id="ccr" aria-describedby="ccr-hint register-reset-note lab-local-values" type="number" min="0" max={maxCcr} step="1" value={ccr} onChange={(event) => changeCompare(Number(event.target.value))}/>
             <p id="ccr-hint" className="field-hint">Aufwärtszählender PWM-Modus 1: Das interne Signal OC2REF ist aktiv, solange CNT &lt; CCR2. CCR2 darf größer als ARR sein.</p>
+          </div>
+          <div className="lab-local-feedback" aria-label="Ergebnisse der aktuellen Registerwerte">
+            <output id="lab-local-values" aria-live="off">
+              <strong>Ergebnis:</strong> f<sub>PWM</sub> = {result ? formatFrequency(result.pwmHz) : "–"} ·
+              Tastverhältnis = {result ? formatDutyPercent(result.duty) : "–"} % ·
+              CCR2 = {ccr.toLocaleString("de-DE")} · CNT = {counter.cnt.toLocaleString("de-DE")}
+            </output>
+            <div className="lab-local-jumps">
+              <button type="button" onClick={() => jumpToLabSection("lab-counter")}>→ CNT ansehen</button>
+              <button type="button" onClick={() => jumpToLabSection("lab-waveform")}>→ Zeitdiagramm ansehen</button>
+            </div>
           </div>
           {ccr > arr && <p className="register-compare-note" role="status">CCR2 ist größer als ARR: CNT erreicht diese Vergleichsschwelle nicht. Das interne OC2REF bleibt durchgehend aktiv (100 % Tastverhältnis).</p>}
           <div className="field slider-field">
