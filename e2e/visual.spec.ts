@@ -491,7 +491,7 @@ test("DOT-Signalweg: interne Referenz, PE11-Pegel und low-aktive LED bleiben syn
   await expect(details.getByTestId("path-pe11")).toContainText("PE11: LOW (0)");
   await expect(details.getByTestId("path-dot")).toContainText("DOT: AN");
   await expect(details.locator(".dot-path-row-active")).toContainText("LOW (0)");
-  await expect(details).toContainText("CC2E / MOE");
+  await expect(details).toContainText("CC2E und MOE für TIM1");
   await expect(details).toContainText("kein verifizierter elektrischer Schaltplan");
   await details.scrollIntoViewIfNeeded();
   await capture(page, info.project.name, "dot-path-tim1-on");
