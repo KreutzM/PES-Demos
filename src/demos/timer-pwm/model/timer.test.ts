@@ -44,6 +44,18 @@ describe("STM32F429-Upcounting PWM", () => {
     expect(() => calculateTimer("TIM2", { psc: 0, arr: 9, ccr: 0x100000000 })).toThrow(RangeError);
   });
 
+  it("markiert am vollen ARR-Registermaximum keine falschen 100 %", () => {
+    const tim1 = calculateTimer("TIM1", { psc: 0, arr: 65535, ccr: 65535 });
+    const tim2 = calculateTimer("TIM2", { psc: 0, arr: 0xffffffff, ccr: 0xffffffff });
+    expect(tim1.duty).toBeLessThan(1);
+    expect(tim2.duty).toBeLessThan(1);
+    expect(tim1.activeTicks).toBe(65535);
+    expect(tim2.activeTicks).toBe(0xffffffff);
+    expect(pwmActive(65535, 65535)).toBe(false);
+    expect(pwmActive(0xffffffff, 0xffffffff)).toBe(false);
+    expect(ticksUntilCompare(65534, 65535, 65535)).toBe(1);
+  });
+
   it("berücksichtigt die unterschiedlichen Zählerbreiten", () => {
     expect(() => calculateTimer("TIM1", { psc: 0, arr: 65536, ccr: 0 })).toThrow(RangeError);
     expect(calculateTimer("TIM2", { psc: 0, arr: 65536, ccr: 0 }).pwmHz).toBeGreaterThan(0);
