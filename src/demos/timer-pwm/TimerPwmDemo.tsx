@@ -25,11 +25,24 @@ interface PresetSnapshot {
 }
 
 function formatFrequency(value: number): string {
-  return value.toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " Hz";
+  return value > 0 && value < 0.00005
+    ? value.toExponential(2) + " Hz"
+    : value.toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " Hz";
 }
 
 function formatPeriod(seconds: number): string {
-  return (seconds * 1000).toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " ms";
+  if (seconds < 1e-6) return (seconds * 1e9).toLocaleString("de-DE", { maximumFractionDigits: 3 }) + " ns";
+  if (seconds < 1e-3) return (seconds * 1e6).toLocaleString("de-DE", { maximumFractionDigits: 3 }) + " µs";
+  if (seconds < 1) return (seconds * 1e3).toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " ms";
+  return seconds.toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " s";
+}
+
+function formatDutyPercent(duty: number): string {
+  // Rounded 100,0 % would falsely imply an always-active OC2REF.
+  const percent = 100 * duty;
+  if (duty < 1 && percent >= 99.95) return "< 100";
+  if (duty > 0 && percent < 0.05) return "> 0";
+  return percent.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
 export default function TimerPwmDemo() {
@@ -260,21 +273,23 @@ export default function TimerPwmDemo() {
           </div>
           {ccr > arr && <p className="register-compare-note" role="status">CCR2 ist größer als ARR: CNT erreicht diese Vergleichsschwelle nicht. Das interne OC2REF bleibt durchgehend aktiv (100 % Tastverhältnis).</p>}
           <div className="field slider-field">
-            <label htmlFor="duty">Tastverhältnis (Duty Cycle) <strong>{result ? (result.duty * 100).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "–"} %</strong></label>
+            <label htmlFor="duty">Tastverhältnis (Duty Cycle) <strong>{result ? formatDutyPercent(result.duty) : "–"} %</strong></label>
             <input id="duty" type="range" min="0" max="100" step="1"
               value={result ? result.duty * 100 : 0}
               onChange={(event) => changeCompare(Math.min(maxCcr, Math.round(Number(event.target.value) / 100 * (arr + 1))))}
-              aria-label="Tastverhältnis über CCR2 einstellen"/>
-            <div className="range-labels"><span>0 %</span><span>100 %</span></div>
+              aria-label="Tastverhältnis über CCR2 einstellen"
+              aria-valuetext={result ? formatDutyPercent(result.duty) + " Prozent" : undefined}/>
+            <div className="range-labels"><span>0 %</span><span>{arr === maxArr ? "max. < 100 %" : "100 %"}</span></div>
             <p className="field-hint">CCR2 lässt sich nur in ganzen Registerschritten ändern. Das angezeigte Tastverhältnis kann deshalb vom eingestellten Prozentwert abweichen.</p>
+            {arr === maxArr && <p className="field-hint duty-limit-note">Bei ARR = Registermaximum ist CCR2 = ARR + 1 nicht darstellbar. Exakt 100 % sind hier nicht möglich; am Sliderende gilt der größte erreichbare CCR2-Wert.</p>}
           </div>
+          <p className="preset-effects">Alle Voreinstellungen laden <strong>TIM1, das RCC-Praktikumsprofil (168 MHz), PSC, ARR, CCR2 und den Wiedergabemodus</strong> neu. Die Wiedergabe stoppt; CNT, Prescaler-Phase und CNT-Rücksprünge werden auf null gesetzt.</p>
           <div className="preset-buttons" aria-label="Timer-Voreinstellungen">
             <button type="button" className="button button-ghost" onClick={() => applyPreset("divider")}>Voreinstellung: PSC = 3 (÷4)</button>
             <button type="button" className="button button-ghost" onClick={() => applyPreset("steps")}>Voreinstellung: 10 Zählschritte · 30 %</button>
             <button type="button" className="button button-ghost" onClick={() => applyPreset("blink")}>Voreinstellung: 1 Hz · Blinken</button>
             <button type="button" className="button button-ghost" onClick={() => applyPreset("dim")}>Voreinstellung: 1 kHz · Dimmen</button>
           </div>
-          <p className="preset-effects">Alle Voreinstellungen laden <strong>TIM1, das RCC-Praktikumsprofil (168 MHz), PSC, ARR, CCR2 und den Wiedergabemodus</strong> neu. Die Wiedergabe stoppt; CNT, Prescaler-Phase und CNT-Rücksprünge werden auf null gesetzt.</p>
           {savedBeforePreset && <button type="button" className="button button-secondary preset-restore" onClick={restorePresetConfiguration}>↶ Vorherige Konfiguration wiederherstellen</button>}
           {presetStatus && <p className="preset-status" role="status">{presetStatus}</p>}
           {error && <p className="error" role="alert">{error}</p>}
@@ -301,7 +316,7 @@ export default function TimerPwmDemo() {
             </div>
             <div className="counter-progress" role="progressbar" aria-valuemin={0} aria-valuemax={arr} aria-valuenow={counter.cnt} aria-label="Zählerposition in der PWM-Periode">
               <span style={{ width: phasePercent + "%" }} />
-              <i style={{ left: Math.min(100, ccr / (arr + 1) * 100) + "%" }} title="CCR2-Schwelle" />
+              {ccr > 0 && ccr <= arr && <i style={{ left: ccr / (arr + 1) * 100 + "%" }} title="CCR2-Abschaltschwelle" />}
             </div>
             <div className="counter-extras">
               <span>CNT-Rücksprünge (ARR → 0): <strong>{counter.overflows.toLocaleString("de-DE")}</strong></span>

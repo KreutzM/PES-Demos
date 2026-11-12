@@ -13,7 +13,9 @@ interface Props {
 function f(hz: number): string {
   if (hz >= 1e6) return (hz / 1e6).toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " MHz";
   if (hz >= 1e3) return (hz / 1e3).toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " kHz";
-  return hz.toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " Hz";
+  return hz > 0 && hz < 0.00005
+    ? hz.toExponential(2) + " Hz"
+    : hz.toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " Hz";
 }
 
 function t(seconds: number): string {
@@ -39,7 +41,10 @@ export default function PrescalerPipeline({ timclkHz, psc, arr, ccr, state, onCl
           <p>PSC und ARR speichern jeweils den <strong>Endwert einer Zählung ab 0</strong>.
             Deshalb zählt der Prescaler <strong>0 … PSC</strong> und CNT <strong>0 … ARR</strong>.</p>
         </div>
-        <button type="button" className="button button-ghost" onClick={onSmallExample}>Beispiel: PSC = 3</button>
+        <div className="divider-example-action">
+          <p className="divider-preset-warning">Dieses Beispiel lädt TIM1, das RCC-Praktikumsprofil, PSC, ARR und CCR2 neu, stoppt die Wiedergabe und setzt CNT und Prescaler-Phase zurück.</p>
+          <button type="button" className="button button-ghost" onClick={onSmallExample}>Beispiel: PSC = 3</button>
+        </div>
       </div>
 
       <div className="divider-flow" aria-label="Taktweg vom Timer-Eingang bis zur PWM">
@@ -86,7 +91,7 @@ export default function PrescalerPipeline({ timclkHz, psc, arr, ccr, state, onCl
             <p>Jeder Klick verarbeitet die angegebene Anzahl von <em>Timer-Eingangstaktimpulsen</em>, nicht CPU-Instruktionen.</p>
           </div>
           <div className="divider-phase-number" aria-live="polite">
-            <span>Verarbeitete Eingangstakte seit letztem CNT-Schritt</span>
+            <span>Timer-Eingangstaktimpulse seit letztem CNT-Zählschritt</span>
             <strong>{state.prescalerPhase.toLocaleString("de-DE")} / {divisor.toLocaleString("de-DE")}</strong>
           </div>
         </div>

@@ -74,7 +74,13 @@ export default function Waveform({ arr, ccr, cnt, periodSeconds }: WaveformProps
   const stepsVisible = arr < 24;
   const counter = counterPath(arr);
   const pwm = pwmPath(arr, ccr);
-  const periodMs = (periodSeconds * 1000).toLocaleString("de-DE", { maximumFractionDigits: 3 });
+  const periodLabel = periodSeconds < 1e-6
+    ? (periodSeconds * 1e9).toLocaleString("de-DE", { maximumFractionDigits: 3 }) + " ns"
+    : periodSeconds < 1e-3
+      ? (periodSeconds * 1e6).toLocaleString("de-DE", { maximumFractionDigits: 3 }) + " µs"
+      : periodSeconds < 1
+        ? (periodSeconds * 1e3).toLocaleString("de-DE", { maximumFractionDigits: 3 }) + " ms"
+        : periodSeconds.toLocaleString("de-DE", { maximumFractionDigits: 3 }) + " s";
 
   return (
     <div>
@@ -111,8 +117,8 @@ export default function Waveform({ arr, ccr, cnt, periodSeconds }: WaveformProps
         <line x1={cursorX} x2={cursorX} y1="22" y2="278" className="cnt-cursor"/>
         <circle cx={cursorX} cy={cursorY} r="6" className="cnt-cursor-dot"/>
         <circle cx={cursorX} cy={isActive ? Y_PWM_HIGH : Y_PWM_LOW} r="5" className="cnt-cursor-dot"/>
-        <text x={X0 + PERIOD_WIDTH / 2} y="294" textAnchor="middle" className="wave-label">T = {periodMs} ms</text>
-        <text x={X0 + PERIOD_WIDTH * 1.5} y="294" textAnchor="middle" className="wave-label">T = {periodMs} ms</text>
+        <text x={X0 + PERIOD_WIDTH / 2} y="294" textAnchor="middle" className="wave-label">T = {periodLabel}</text>
+        <text x={X0 + PERIOD_WIDTH * 1.5} y="294" textAnchor="middle" className="wave-label">T = {periodLabel}</text>
       </svg>
       <p className="timeline-hint">{stepsVisible ? "CNT wird für jeden Zählschritt als Treppe dargestellt." : "Bei großem ARR ist der CNT-Anstieg schematisch als Linie dargestellt."} {ccr === 0 ? "CCR2 = 0: OC2REF bleibt inaktiv (0 %)." : ccr > arr ? "CCR2 > ARR: OC2REF bleibt durchgehend aktiv (100 %); innerhalb der Periode gibt es keine Abschaltschwelle." : "Die orange Linie markiert den Vergleichswert CCR2 und den Wechsel von OC2REF zu inaktiv."} Der Cursor zeigt denselben CNT-Stand wie die Registeranzeige.</p>
     </div>

@@ -294,7 +294,14 @@ button:disabled { opacity:.45; cursor:not-allowed; }
   border:1px solid #a17645; border-radius:9px;
   background:#352a25; color:#f1cea2; font-size:12px; line-height:1.65;
 }
-.preset-effects { margin:11px 0 0; color:#acc5d3; font-size:12px; line-height:1.7; }
+.preset-effects { margin:6px 0 12px; color:#acc5d3; font-size:12px; line-height:1.7; }
 .preset-effects strong { color:#e0ebf0; }
 .preset-restore { margin-top:14px; width:100%; }
 .preset-status { color:#94e1cc; font-size:12px; line-height:1.6; margin:9px 0 0; }
+
+/* PR #8 review: keep the PSC example's side effects visible before clicking */
+.divider-example-action { display:flex; flex-direction:column; gap:7px; width:min(100%,260px); flex:0 0 auto; }
+.divider-example-action .button { width:100%; }
+.divider-preset-warning { margin:0; font-size:12px; line-height:1.55; color:#b3cdd8; }
+.duty-limit-note { color:#f0d19e; }
+@media(max-width:700px) { .divider-example-action { width:100%; } }
