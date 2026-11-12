@@ -107,8 +107,9 @@ export default function GuidedTimerLesson({
             ))}
           </fieldset>
           <p className="guided-hint">
-            {answer ? "Vermutung festgelegt. Führe nun das Experiment aus und prüfe das Ergebnis."
-              : "Wähle zuerst deine Vermutung. Die Antwort wird erst nach dem Versuch erklärt."}
+            {finished ? "Experiment abgeschlossen. Vergleiche deine Vorhersage mit der Beobachtung und Erklärung."
+              : answer ? "Vermutung festgelegt. Führe nun das Experiment aus und prüfe das Ergebnis."
+                : "Wähle zuerst deine Vermutung. Die Antwort wird erst nach dem Versuch erklärt."}
           </p>
         </div>
 

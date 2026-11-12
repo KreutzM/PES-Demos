@@ -394,3 +394,9 @@ button:disabled { opacity:.45; cursor:not-allowed; }
   .guided-navigation { flex-wrap:wrap; }
   .guided-navigation .button { flex:1 1 180px; }
 }
+
+/* Disabled steps remain unmistakably inactive after an experiment is completed. */
+.guided-experiment .button-primary:disabled,
+.guided-navigation .button-primary:disabled {
+  background:#28464c; color:#859ca6; border-color:#395461; opacity:1;
+}
