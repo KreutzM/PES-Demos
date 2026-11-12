@@ -77,3 +77,13 @@ npx playwright show-report
 Die Playwright-Konfiguration startet dafür automatisch `vite preview` auf Port 4173. Screenshots stammen aus der **gebauten Produktionsversion**, nicht aus dem Entwicklungsserver.
 
 Der GitHub-Runner bringt **Google Chrome Stable** bereits mit. Der Playwright-Job verwendet ihn dort direkt, statt Chromium erneut herunterzuladen. Lokal verwendet Playwright nach `npx playwright install chromium` die eigene Chromium-Version.
+
+## Review-Korrekturen: Issue #7 / Timer-Register und Begriffe
+
+- **Registertreue:** ARR-Änderungen verändern CCR2 **nicht**. Beispiel ARR 9→19 bei CCR2=3: 30 %→15 % Tastverhältnis.
+- **Unabhängiges CCR2:** Der Vergleichswert ist innerhalb seiner 16-/32-Bit-Registerbreite unabhängig von ARR. Bei CCR2>ARR bleibt OC2REF im hier betrachteten aufwärtszählenden PWM-Modus 1 durchgehend aktiv; das Zeitdiagramm zeigt keine fingierte Abschaltflanke.
+- **Eindeutige Sprache:** »Timer-Eingangstaktimpuls« für den Eingang, »CNT-Zählschritt« für den geteilten Zähler, »periodischer CNT-Rücksprung ARR→0« und »OC2REF« für das interne Referenzsignal. Ereignisse und Frequenzen werden getrennt benannt.
+- **Transparentes Reset-Verhalten:** Register-/RCC-Änderungen pausieren und starten die Simulation mit CNT/Prescalerphase=0. Voreinstellungen überschreiben zusätzlich Timer, RCC-Profil, Register und Wiedergabemodus; die unmittelbar vorherige Konfiguration mit Zählerstand kann wiederhergestellt werden.
+- **Regressionstests:** Neue Unit-Tests und Playwright-End-to-end-Szenarien prüfen ARR-/CCR2-Unabhängigkeit, PWM-Grenzfälle, Reset und Preset-Rückkehr.
+
+Diese Anpassungen betreffen die bestehende Laboransicht. Der geplante geführte Lernmodus folgt als separates Issue/PR.

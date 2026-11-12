@@ -40,12 +40,15 @@ test("Taktbaum: TIM2 zunächst halb so schnell, mit TIMPRE wieder gleich schnell
   await capture(page, info.project.name, "clock-tree");
 });
 
-test("Vier TIMxCLK-Flanken bei PSC=3 ergeben erst einen CNT-Tick", async ({ page }, info) => {
+test("Vier Eingangstaktimpulse bei PSC=3 ergeben erst einen CNT-Zählschritt", async ({ page }, info) => {
   await page.goto("/PES-Demos/#/timer-pwm");
-  await page.getByRole("button", { name: /Beispiel: PSC = 3/ }).click();
+  const upperButton = page.getByRole("button", { name: /Beispiel: PSC = 3/ });
+  await expect(upperButton.locator(".divider-preset-warning")).toBeVisible();
+  await expect(upperButton).toContainText("zurückgesetzt");
+  await upperButton.click();
   const cnt = page.locator(".counter-number");
   const phase = page.locator(".divider-phase-number strong");
-  const step = page.getByRole("button", { name: "+1 TIMxCLK-Flanke" });
+  const step = page.getByRole("button", { name: "+1 Eingangstaktimpuls" });
 
   await expect(cnt).toHaveText("0");
   await expect(phase).toHaveText("0 / 4");
@@ -60,8 +63,8 @@ test("Vier TIMxCLK-Flanken bei PSC=3 ergeben erst einen CNT-Tick", async ({ page
   await step.click();
   await expect(cnt).toHaveText("1");
   await expect(phase).toHaveText("0 / 4");
-  await expect(page.locator(".divider-psc-status")).toContainText("CNT-Tick erzeugt");
-  await page.getByRole("button", { name: /Nächster CNT-Tick/ }).click();
+  await expect(page.locator(".divider-psc-status")).toContainText("CNT-Zählschritt erzeugt");
+  await page.getByRole("button", { name: /nächsten CNT-Zählschritt/ }).click();
   await expect(cnt).toHaveText("2");
   await capture(page, info.project.name, "prescaler-after-tick");
 });
@@ -74,4 +77,119 @@ test("Keine horizontale Überbreite bei Desktop- und Mobilansicht", async ({ pag
     viewportWidth: document.documentElement.clientWidth,
   }));
   expect(dimensions.documentWidth).toBeLessThanOrEqual(dimensions.viewportWidth + 2);
+});
+
+test("Isolierte ARR-Änderung lässt CCR2 stabil; CCR2 über ARR erzeugt 100 % ohne Abschaltflanke", async ({ page }, info) => {
+  await page.goto("/PES-Demos/#/timer-pwm");
+  await expect(page.locator("#arr")).toHaveValue("9");
+  await expect(page.locator("#ccr")).toHaveValue("3");
+  await page.locator("#arr").fill("19");
+  await expect(page.locator("#ccr")).toHaveValue("3");
+  await expect(page.locator("label[for='duty']")).toContainText("15,0 %");
+  await expect(page.locator(".divider-equations")).toContainText("15 %");
+  await capture(page, info.project.name, "arr-isolated-change");
+
+  await page.locator("#arr").fill("9");
+  await page.locator("#ccr").fill("12");
+  await expect(page.locator("#ccr")).toHaveValue("12");
+  await expect(page.locator("label[for='duty']")).toContainText("100,0 %");
+  await expect(page.getByRole("button", { name: /Zur Abschaltschwelle/ })).toBeDisabled();
+  await expect(page.locator(".register-compare-note")).toContainText("100 %");
+  await expect(page.locator(".timeline-hint")).toContainText("keine Abschaltschwelle");
+  await capture(page, info.project.name, "ccr-greater-than-arr");
+});
+
+test("Voreinstellung beschreibt Nebenwirkungen und stellt Timer, RCC, Register, Zählerstand wieder her", async ({ page }, info) => {
+  await page.goto("/PES-Demos/#/timer-pwm");
+  await page.locator("#timer").selectOption("TIM2");
+  const apb1 = page.locator(".clock-controls .clock-select").nth(2).locator("select");
+  const apb2 = page.locator(".clock-controls .clock-select").nth(3).locator("select");
+  await apb1.selectOption("8");
+  await apb2.selectOption("4");
+  await page.locator(".clock-checkbox input").check();
+  await page.locator("#psc").fill("7");
+  await page.locator("#arr").fill("19");
+  await page.locator("#ccr").fill("12");
+  await page.locator(".transport-buttons").getByRole("button", { name: "+1 CNT-Zählschritt" }).click();
+  await page.getByRole("button", { name: "+1 Eingangstaktimpuls" }).click();
+  await expect(page.locator(".counter-number")).toHaveText("1");
+  await expect(page.locator(".divider-phase-number strong")).toHaveText("1 / 8");
+
+  const presetWarning = page.locator(".preset-effects");
+  const firstPreset = page.locator(".preset-buttons button").first();
+  await expect(presetWarning).toBeVisible();
+  const [warningRect, presetRect] = await Promise.all([presetWarning.boundingBox(), firstPreset.boundingBox()]);
+  expect(warningRect && presetRect && warningRect.y + warningRect.height <= presetRect.y + 2).toBeTruthy();
+  await expect(presetWarning).toContainText("RCC-Praktikumsprofil");
+  await page.getByRole("button", { name: /1 Hz · Blinken/ }).click();
+  await expect(page.locator("#timer")).toHaveValue("TIM1");
+  await expect(page.locator("#psc")).toHaveValue("16799");
+  await expect(page.locator("#arr")).toHaveValue("9999");
+  await expect(page.locator("#ccr")).toHaveValue("5000");
+  await expect(page.locator(".counter-number")).toHaveText("0");
+  await expect(page.locator(".preset-status")).toContainText("geladen");
+  await capture(page, info.project.name, "preset-loaded");
+
+  await page.getByRole("button", { name: /Vorherige Konfiguration wiederherstellen/ }).click();
+  await expect(page.locator("#timer")).toHaveValue("TIM2");
+  await expect(page.locator("#psc")).toHaveValue("7");
+  await expect(page.locator("#arr")).toHaveValue("19");
+  await expect(page.locator("#ccr")).toHaveValue("12");
+  await expect(page.locator(".counter-number")).toHaveText("1");
+  await expect(apb1).toHaveValue("8");
+  await expect(apb2).toHaveValue("4");
+  await expect(page.locator(".clock-checkbox input")).toBeChecked();
+  await expect(page.locator("#playback")).toHaveValue("ticks");
+  await expect(page.locator(".divider-phase-number strong")).toHaveText("1 / 8");
+  await expect(page.locator(".transport-buttons").getByRole("button", { name: /Start/ })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /Vorherige Konfiguration wiederherstellen/ })).toHaveCount(0);
+});
+
+test("Registeränderungen setzen CNT und Prescalerphase kontrolliert zurück", async ({ page }) => {
+  await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: /Beispiel: PSC = 3/ }).click();
+  const step = page.getByRole("button", { name: "+1 Eingangstaktimpuls" });
+  for (let i = 0; i < 4; i++) await step.click();
+  await expect(page.locator(".counter-number")).toHaveText("1");
+  await page.locator("#psc").fill("4");
+  await expect(page.locator(".counter-number")).toHaveText("0");
+  await expect(page.locator(".divider-phase-number strong")).toHaveText("0 / 5");
+  await expect(page.locator(".register-reset-note")).toContainText("pausieren");
+});
+
+test("PWM-Grenzen: kein falscher 100-%-Wert, keine Abschaltmarkierung ohne Ereignis", async ({ page }) => {
+  await page.goto("/PES-Demos/#/timer-pwm");
+  const marker = page.locator(".counter-progress i");
+  const compareGuide = page.locator(".waveform .compare-guide");
+  await page.locator("#ccr").fill("0");
+  await expect(marker).toHaveCount(0);
+  await expect(compareGuide).toHaveCount(0);
+  await expect(page.locator("label[for='duty']")).toContainText("0,0 %");
+
+  await page.locator("#ccr").fill("10"); // ARR=9 -> exact 100 %
+  await expect(marker).toHaveCount(0);
+  await expect(compareGuide).toHaveCount(0);
+  await expect(page.locator("label[for='duty']")).toContainText("100,0 %");
+
+  await page.locator("#arr").fill("65535");
+  await page.locator("#ccr").fill("65535"); // compare at last possible count
+  await expect(marker).toHaveCount(1);
+  await expect(compareGuide).toHaveCount(1);
+  await expect(page.locator("label[for='duty']")).toContainText("< 100 %");
+  await expect(page.locator(".duty-limit-note")).toContainText("Exakt 100 %");
+  await expect(page.locator(".range-labels")).toContainText("max. < 100 %");
+
+  await page.locator("#psc").fill("0");
+  await page.locator("#arr").fill("0");
+  await expect(page.locator(".metric").last()).toContainText("ns");
+  await expect(page.locator(".waveform")).toContainText("ns");
+
+  await page.locator("#timer").selectOption("TIM2");
+  await page.locator("#arr").fill("65536");
+  await expect(page.locator(".clock-comparison")).toContainText("nicht möglich");
+  await page.locator("#psc").fill("65535");
+  await page.locator("#arr").fill("4294967295");
+  await page.locator("#ccr").fill("4294967295");
+  await expect(page.locator("label[for='duty']")).toContainText("< 100 %");
+  await expect(page.locator(".metric.featured strong")).not.toHaveText("0 Hz");
 });

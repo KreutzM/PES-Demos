@@ -46,8 +46,10 @@ export function calculateTimer(
   if (!Number.isInteger(arr) || arr < 0 || arr > TIMER_ARR_MAX[timer]) {
     throw new RangeError("ARR ist außerhalb der Zählerbreite von " + timer + ".");
   }
-  if (!Number.isInteger(ccr) || ccr < 0 || ccr > arr + 1 || ccr > TIMER_ARR_MAX[timer]) {
-    throw new RangeError("CCR muss zwischen 0 und min(ARR + 1, Registermaximum) liegen.");
+  // CCR2 ist ein eigenständiges Register; auch Werte > ARR sind erlaubt.
+  // In PWM-Modus 1 bleibt OC2REF dann für die gesamte Periode aktiv.
+  if (!Number.isInteger(ccr) || ccr < 0 || ccr > TIMER_ARR_MAX[timer]) {
+    throw new RangeError("CCR2 muss innerhalb der Registerbreite von " + timer + " liegen.");
   }
   const counterHz = timerClockHz / (psc + 1);
   const pwmHz = counterHz / (arr + 1);
@@ -56,24 +58,24 @@ export function calculateTimer(
     counterHz,
     pwmHz,
     periodSeconds: 1 / pwmHz,
-    duty: ccr / (arr + 1),
-    activeTicks: ccr,
+    duty: Math.min(1, ccr / (arr + 1)),
+    activeTicks: Math.min(ccr, arr + 1),
   };
 }
 
-/** Zustandsmodell für das Zählwerk. Die simulierte Zeitbasis ist ein CNT-Tick,
+/** Zustandsmodell für das Zählwerk. Die simulierte Zeitbasis ist ein CNT-Zählschritt,
  * nicht ein Browserframe oder ein Systemtaktzyklus. */
 export interface CounterState {
   cnt: number;
   overflows: number;
 }
 
-/** Zustand des internen PWM1-Referenzsignals (OCxREF), vor der Ausgangspolarität. */
+/** Zustand des internen PWM1-Referenzsignals (OC2REF), vor der Ausgangspolarität. */
 export function pwmActive(cnt: number, ccr: number): boolean {
   return cnt < ccr;
 }
 
-/** Überspringt beliebig viele CNT-Ticks, ohne jeden Tick einzeln auszuführen. */
+/** Überspringt beliebig viele CNT-Zählschritts, ohne jeden Tick einzeln auszuführen. */
 export function advanceCounter(state: CounterState, arr: number, ticks: number): CounterState {
   if (!Number.isSafeInteger(arr) || arr < 0 || !Number.isSafeInteger(state.cnt) ||
       state.cnt < 0 || state.cnt > arr || !Number.isSafeInteger(ticks) || ticks < 0 ||
@@ -101,7 +103,7 @@ export function ticksUntilOverflow(cnt: number, arr: number): number {
  * Bei CCR=0 bzw. CCR>ARR existiert kein solcher Flankenwechsel. */
 export function ticksUntilCompare(cnt: number, arr: number, ccr: number): number | null {
   if (!Number.isSafeInteger(cnt) || !Number.isSafeInteger(arr) || !Number.isSafeInteger(ccr) ||
-      arr < 0 || cnt < 0 || cnt > arr || ccr < 0 || ccr > arr + 1) {
+      arr < 0 || cnt < 0 || cnt > arr || ccr < 0 || ccr > 0xffffffff) {
     throw new RangeError("Ungültiger Compare-Zustand.");
   }
   if (ccr === 0 || ccr > arr) return null;
