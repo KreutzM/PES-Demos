@@ -388,6 +388,8 @@ test("320–1280 px: beide Lernmodi ohne horizontale Dokument-Überbreite", asyn
   for (const width of [320, 360, 393, 768, 1280]) {
     await page.setViewportSize({ width, height: 800 });
     await page.goto("/PES-Demos/#/timer-pwm");
+    // Changing viewport on the same hash route does not remount the React app.
+    await page.getByRole("button", { name: "Geführter Einstieg", exact: true }).click();
     await expect(page.getByTestId("guided-question")).toBeVisible();
 
     let excess = await page.evaluate(() =>
