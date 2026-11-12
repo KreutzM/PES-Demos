@@ -39,6 +39,23 @@ test("Landingpage und Timer-Labor sind erreichbar und sichtbar", async ({ page }
   expect(errors, "Keine ungefangenen Browser-JavaScriptfehler").toEqual([]);
 });
 
+test("Kopf-Navigation: von Übersicht zu Timer & PWM und zurück", async ({ page }) => {
+  await page.goto("/PES-Demos/#/");
+  const header = page.getByRole("navigation", { name: "Hauptnavigation" });
+  await expect(header.getByRole("link", { name: "Übersicht" })).toHaveAttribute("aria-current", "page");
+  await header.getByRole("link", { name: "Timer & PWM" }).click();
+  await expect(page).toHaveURL(/#\/timer-pwm$/);
+  await expect(page.getByRole("heading", { name: "Timer & PWM", exact: true })).toBeVisible();
+  await expect(header.getByRole("link", { name: "Timer & PWM" })).toHaveAttribute("aria-current", "page");
+
+  await header.getByRole("link", { name: "Übersicht" }).click();
+  await expect(page.getByRole("heading", {
+    name: "Interaktive Experimente zur STM32F429-Hardware",
+  })).toBeVisible();
+  await expect(header.getByRole("link", { name: "Übersicht" })).toHaveAttribute("aria-current", "page");
+  await expect(page.locator('a[href*="github.com/KreutzM/PES-Demos"]')).toHaveCount(0);
+});
+
 test("Taktbaum: TIM2 zunächst halb so schnell, mit TIMPRE wieder gleich schnell", async ({ page }, info) => {
   await page.goto("/PES-Demos/#/timer-pwm");
   await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
@@ -596,7 +613,7 @@ test("Startseite 320–1280 px: Text, Karte und Navigation ohne Repository-Link"
     })).toBeVisible();
     await expect(page.getByRole("link", { name: "Timer & PWM öffnen" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Timer & PWM", exact: true })).toHaveCount(1);
-  await expect(page.locator("a.demo-card[href='#/timer-pwm']")).toHaveCount(1);
+    await expect(page.locator("a.demo-card[href='#/timer-pwm']")).toHaveCount(1);
     await expect(page.locator('a[href*="github.com/KreutzM/PES-Demos"]')).toHaveCount(0);
     const overflow = await page.evaluate(() =>
       document.documentElement.scrollWidth - document.documentElement.clientWidth);
