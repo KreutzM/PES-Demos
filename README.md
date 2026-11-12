@@ -101,3 +101,18 @@ Der geführte Modus ist ein didaktisches Angebot, keine Speicherung oder Benotun
 Im **freien Labor** erscheinen Registersteuerung, CNT-Zähler, Zeitdiagramm und Kennwerte zuerst. Danach folgen die vollständigen Vertiefungen für **RCC-Taktbaum** und **Prescaler**; ihre Rechen- und Eingabefunktionen bleiben unverändert. Die Sprungnavigation bedient die Bereiche ohne Routenwechsel (die Anwendung nutzt Hash-Routing) und bewegt den Tastaturfokus zum gewählten Abschnitt. Aus den Vertiefungen gibt es einen direkten Rückweg zu den Registern.
 
 Register-Eingaben referenzieren ihre Erklärtexte über `aria-describedby`; mobile Layouts, Textgrößen und Tasten sind auf **320 bis 1280 px** ausgerichtet. E2E prüft die Navigation, die unabhängige ARR/CCR2-Bearbeitung und die horizontale Breite in beiden Modi. Diese Änderungen betreffen Layout/Bedienbarkeit, **nicht** die Timer-Berechnungen.
+
+## Virtuelles DOT an PE11: Signalweg (Issue #5)
+
+Der Abschnitt „Virtuelles DOT · PE11“ besitzt ein **standardmäßig geschlossenes, per Tastatur zugängliches Ausklappfeld** mit einem dynamischen **Signalweg und einer Zustandstabelle**. Er trennt das **interne OC2REF-Signal**, die Ausgangspolarität `TIM_OCPOLARITY_LOW`, den **elektrischen PE11-Pegel** und die **low-aktive DOT-Anzeige**.
+
+- PWM Mode 1: `OC2REF = 1` für `CNT < CCR2` (gemeinsamer Berechnungspfad `pwmActive`).
+- Bei `TIM1_CH2` mit `OCPolarity LOW` entspricht OC2REF=1 einem **LOW-Pegel an PE11**; eine low-aktive DOT-Leitung lässt das gewählte Segment dann leuchten.
+- Die physikalische Darstellung gilt nur bei **TIM1** und unter Annahme aktivierter Ausgangsfreigaben **CC2E/MOE**, AF1-Konfiguration sowie einer aktivierten Anzeigenstelle über **CNTL1…CNTL4**. Diese Voraussetzungen sind in der Website nicht dynamisch modelliert. **TIM2_CH2 ist nicht mit DOT/PE11 verbunden.**
+- Das Blockschaltbild ist eine **didaktische Funktionsdarstellung, kein elektrischer Stromlaufplan** und behauptet keine zusätzlichen physischen Inverter. Der tatsächliche Treiber-/Multiplex-Strompfad des 8-Segment-Adapterboards ist nicht rekonstruiert.
+- **Primärquelle der Praktikumshardware:** *Praktikum Eingebettete Systeme – Praktikumsanleitung*, Technische Hochschule Mittelhessen, **Version 1.6 vom 13.10.2026**, Kap. **7.1.1**, Druckseiten **28–29/79** (low-aktive Segmentleitungen, CNTL1…CNTL4, Verweis auf das 8-Segment-Board-Schematic), sowie Kap. **7.6.3**, Druckseiten **51–52/79** (TIM1_CH2 → AF1 → PE11 → DOT). Die konkrete Kurs-PDF liegt in den Praktikumsressourcen, **nicht als öffentlich verlinkte Kopie** in diesem Repository.
+- **Offizielle Hardwaredokumente:** [ST STM32F429-Datenblatt, Pin-/AF-Tabelle (PE11 / TIM1_CH2)](https://www.st.com/resource/en/datasheet/stm32f429zg.pdf), [Waveshare Open429Z-D – Ressourcen inkl. Basisschaltplan](https://www.waveshare.com/wiki/Open429Z-D) und [Waveshare 8 SEG LED Board – Ressourcen inkl. Adapterschaltplan](https://www.waveshare.com/wiki/8_SEG_LED_Board). Das vorliegende Open429Z-D-Basisschaltbild von 2014 belegt **nicht** den vollständigen Strompfad des Adapterboards; dieser wurde für die Demo nicht elektrisch rekonstruiert.
+
+Das vorhandene OC2REF-Zeitdiagramm und die Simulations-Engine bleiben unverändert; die Tabelle bietet die alternative synchrone Darstellung der drei Pegel-/LED-Ebenen und reagiert auf CNT, CCR2 und Timerwechsel.
+
+**TIM2-Darstellung:** Das geschlossene Ausklappfeld und beide LED-Widgets weisen ausdrücklich auf die fehlende Verbindung zu DOT/PE11 hin. Die TIM1-Pegeltabelle wird bei ausgewähltem TIM2 nicht angezeigt, damit keine hypothetischen PE11-HIGH-/LOW-Werte als aktueller TIM2-Pegel missverstanden werden.
