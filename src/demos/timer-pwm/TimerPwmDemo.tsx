@@ -14,6 +14,16 @@ import {
 type Preset = "divider" | "steps" | "blink" | "dim";
 type Playback = "ticks" | "period";
 
+interface PresetSnapshot {
+  timer: TimerId;
+  clockConfig: ClockConfig;
+  psc: number;
+  arr: number;
+  ccr: number;
+  counter: ClockedCounterState;
+  playback: Playback;
+}
+
 function formatFrequency(value: number): string {
   return value.toLocaleString("de-DE", { maximumFractionDigits: 4 }) + " Hz";
 }
@@ -32,6 +42,8 @@ export default function TimerPwmDemo() {
   const [playing, setPlaying] = useState(false);
   const [playback, setPlayback] = useState<Playback>("ticks");
   const [showCode, setShowCode] = useState(false);
+  const [savedBeforePreset, setSavedBeforePreset] = useState<PresetSnapshot | null>(null);
+  const [presetStatus, setPresetStatus] = useState("");
 
   // Ein didaktischer Zeitraffer, ausdrücklich KEINE Echtzeit-Hardwaresimulation.
   // Große ARR-Werte werden in Schritten bearbeitet; Counter-Ereignisse bleiben exakt.
@@ -47,7 +59,8 @@ export default function TimerPwmDemo() {
   const clock = calculateClockTree(clockConfig);
   const timerClockHz = timer === "TIM1" ? clock.tim1Hz : clock.tim2Hz;
   const maxArr = TIMER_ARR_MAX[timer];
-  const maxCcr = Math.min(arr + 1, maxArr);
+  // CCR2 is an independent 16/32-bit register, not restricted to ARR + 1.
+  const maxCcr = maxArr;
 
   let result: ReturnType<typeof calculateTimer> | null = null;
   let error = "";
@@ -72,7 +85,7 @@ export default function TimerPwmDemo() {
     resetCounter();
     const boundedArr = Math.min(arr, TIMER_ARR_MAX[next]);
     setArr(boundedArr);
-    setCcr(Math.min(ccr, boundedArr + 1, TIMER_ARR_MAX[next]));
+    setCcr(Math.min(ccr, TIMER_ARR_MAX[next]));
     setTimer(next);
   }
 
@@ -84,9 +97,8 @@ export default function TimerPwmDemo() {
   function changePeriod(value: number) {
     resetCounter();
     const boundedArr = Math.max(0, Math.min(maxArr, Math.trunc(value) || 0));
-    const previousDuty = ccr / (arr + 1);
+    // ARR and CCR2 are independent hardware registers. No hidden CCR2 write.
     setArr(boundedArr);
-    setCcr(Math.min(maxArr, Math.round(previousDuty * (boundedArr + 1))));
   }
 
   function changeCompare(value: number) {
@@ -95,6 +107,11 @@ export default function TimerPwmDemo() {
   }
 
   function applyPreset(preset: Preset) {
+    setSavedBeforePreset({
+      timer, clockConfig: { ...clockConfig }, psc, arr, ccr,
+      counter: { ...counter }, playback,
+    });
+    setPresetStatus("Voreinstellung geladen: TIM1, RCC-Profil, PSC, ARR, CCR2 und Wiedergabemodus wurden gesetzt; die Zählung beginnt neu.");
     resetCounter();
     setTimer("TIM1");
     setClockConfig({ ...DEFAULT_CLOCK_CONFIG }); // Presets refer to the documented RCC example.
@@ -121,6 +138,20 @@ export default function TimerPwmDemo() {
     }
   }
 
+  function restorePresetConfiguration() {
+    if (!savedBeforePreset) return;
+    setPlaying(false);
+    setTimer(savedBeforePreset.timer);
+    setClockConfig({ ...savedBeforePreset.clockConfig });
+    setPsc(savedBeforePreset.psc);
+    setArr(savedBeforePreset.arr);
+    setCcr(savedBeforePreset.ccr);
+    setCounter({ ...savedBeforePreset.counter });
+    setPlayback(savedBeforePreset.playback);
+    setSavedBeforePreset(null);
+    setPresetStatus("Vorherige Timer- und RCC-Konfiguration samt Zählerstand wiederhergestellt. Die Wiedergabe bleibt pausiert.");
+  }
+
   function advance(ticks: number) {
     setPlaying(false);
     setCounter((previous) => advanceTimerClocks(previous, psc, arr, ticks * (psc + 1)));
@@ -133,13 +164,17 @@ export default function TimerPwmDemo() {
 
   let observation: string;
   if (counter.cnt === 0 && counter.overflows > 0) {
-    observation = "Überlauf / Update: Der Zähler ist von ARR auf 0 zurückgesprungen. Die nächste PWM-Periode beginnt.";
+    observation = "Periodischer CNT-Rücksprung (ARR → 0): Die nächste PWM-Periode beginnt. Im Modell entspricht dies einem periodischen Update-Ereignis.";
+  } else if (ccr === 0) {
+    observation = "CCR2 = 0: Das interne PWM-Referenzsignal OC2REF bleibt während der ganzen Periode inaktiv (0 %).";
+  } else if (ccr > arr) {
+    observation = "CCR2 > ARR: CNT erreicht den Vergleichswert nicht. OC2REF bleibt durchgehend aktiv (100 %).";
   } else if (counter.cnt === ccr && compareDistance !== null) {
-    observation = "Compare-Schwelle erreicht: CNT = CCR2. Bei PWM Mode 1 wird OCxREF jetzt inaktiv.";
+    observation = "Vergleichsschwelle erreicht (CNT = CCR2): Im aufwärtszählenden PWM-Modus 1 wird OC2REF jetzt inaktiv.";
   } else if (active) {
-    observation = "CNT < CCR2: Das interne PWM-Referenzsignal OCxREF ist aktiv.";
+    observation = "CNT < CCR2: Das interne PWM-Referenzsignal OC2REF ist aktiv.";
   } else {
-    observation = "CNT ≥ CCR2: Das interne PWM-Referenzsignal OCxREF ist inaktiv.";
+    observation = "CNT ≥ CCR2: Das interne PWM-Referenzsignal OC2REF ist inaktiv.";
   }
 
   const code = [
@@ -166,9 +201,9 @@ export default function TimerPwmDemo() {
         <div>
           <div className="eyebrow">STM32F429 · TIMER-PERIPHERIE</div>
           <h1>Timer &amp; <span className="accent">PWM</span></h1>
-          <p className="lead">Sieh dem Zähler beim Arbeiten zu: Verändere Register, schalte Tick für Tick weiter und beobachte unmittelbar den PWM-Ausgang.</p>
+          <p className="lead">Beobachte die Timer-Register: Schalte den CNT-Zähler schrittweise weiter und untersuche das interne PWM-Referenzsignal OC2REF.</p>
         </div>
-        <span className="version-pill">Lernlabor · Version 0.4</span>
+        <span className="version-pill">Lernlabor · Version 0.5</span>
       </div>
 
       <div className="lesson-note" role="note">
@@ -183,7 +218,7 @@ export default function TimerPwmDemo() {
           <h2>Zwei Fragen, zwei Zähler: Warum steht bei PSC und ARR jeweils „+1“?</h2>
           <p>Wähle zunächst <strong>PSC = 3</strong> im Prescaler-Labor. Wie viele Eingangstakte
           vergehen, bis sich CNT von 0 auf 1 erhöht? Untersuche anschließend <strong>ARR = 9,
-          CCR2 = 3</strong>: Bei welchem CNT-Wert wird PWM inaktiv?
+          CCR2 = 3</strong>: Bei welchem CNT-Wert wird das interne PWM-Referenzsignal OC2REF inaktiv?
           Mit den Einzelschritt-Schaltflächen kannst du beides überprüfen.</p>
         </div>
       </div>
@@ -199,43 +234,49 @@ export default function TimerPwmDemo() {
             <div className="eyebrow">01 / KONFIGURATION</div>
             <h2 id="settings-title">Timer-Register</h2>
           </div>
+          <p className="register-reset-note">Register- und RCC-Änderungen pausieren die Animation. CNT, Prescaler-Phase und CNT-Rücksprünge beginnen wieder bei null. Das Modell verwendet die neu eingestellten Registerwerte nach diesem Neustart.</p>
           <div className="field">
             <label htmlFor="timer">Timer</label>
             <select id="timer" value={timer} onChange={(event) => changeTimer(event.target.value as TimerId)}>
               <option value="TIM1">TIM1 · 16 Bit, APB2</option>
               <option value="TIM2">TIM2 · 32 Bit, APB1</option>
             </select>
-            <p className="field-hint">Beim Wechsel bleiben PSC und die zulässigen ARR/CCR-Werte erhalten; die Zählung startet neu.</p>
+            <p className="field-hint">Beim Timerwechsel bleibt PSC erhalten; ARR und CCR2 werden nur bei Überschreiten der neuen Registerbreite begrenzt. CNT wird zurückgesetzt.</p>
           </div>
           <div className="field">
             <label htmlFor="psc">PSC <span>Prescaler</span></label>
             <input id="psc" type="number" min="0" max="65535" step="1" value={psc} onChange={(event) => changePrescaler(Number(event.target.value))}/>
-            <p className="field-hint">Zähltakt = f<sub>TIM</sub> / (PSC + 1)</p>
+            <p className="field-hint">CNT-Zähltaktfrequenz: f<sub>CNT</sub> = f<sub>TIM</sub> / (PSC + 1)</p>
           </div>
           <div className="field">
-            <label htmlFor="arr">ARR <span>Auto-Reload-Register</span></label>
+            <label htmlFor="arr">ARR <span>Oberer CNT-Zählwert (Auto-Reload)</span></label>
             <input id="arr" type="number" min="0" max={maxArr} step="1" value={arr} onChange={(event) => changePeriod(Number(event.target.value))}/>
-            <p className="field-hint">CNT läuft von 0 bis ARR, also ARR + 1 Zählschritte.</p>
+            <p className="field-hint">CNT zählt von 0 bis ARR, also ARR + 1 Zählschritte pro Periode. Eine ARR-Änderung verändert CCR2 nicht.</p>
           </div>
           <div className="field">
-            <label htmlFor="ccr">CCR2 <span>Compare-Register</span></label>
+            <label htmlFor="ccr">CCR2 <span>Vergleichswert für Kanal 2</span></label>
             <input id="ccr" type="number" min="0" max={maxCcr} step="1" value={ccr} onChange={(event) => changeCompare(Number(event.target.value))}/>
-            <p className="field-hint">PWM Mode 1: OCxREF aktiv, solange CNT &lt; CCR2.</p>
+            <p className="field-hint">Aufwärtszählender PWM-Modus 1: Das interne Signal OC2REF ist aktiv, solange CNT &lt; CCR2. CCR2 darf größer als ARR sein.</p>
           </div>
+          {ccr > arr && <p className="register-compare-note" role="status">CCR2 ist größer als ARR: CNT erreicht diese Vergleichsschwelle nicht. Das interne OC2REF bleibt durchgehend aktiv (100 % Tastverhältnis).</p>}
           <div className="field slider-field">
-            <label htmlFor="duty">Duty-Cycle <strong>{result ? (result.duty * 100).toFixed(1) : "–"} %</strong></label>
+            <label htmlFor="duty">Tastverhältnis (Duty Cycle) <strong>{result ? (result.duty * 100).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "–"} %</strong></label>
             <input id="duty" type="range" min="0" max="100" step="1"
               value={result ? result.duty * 100 : 0}
-              onChange={(event) => changeCompare(Math.round(Number(event.target.value) / 100 * (arr + 1)))}
-              aria-label="Aktiver Duty-Cycle"/>
+              onChange={(event) => changeCompare(Math.min(maxCcr, Math.round(Number(event.target.value) / 100 * (arr + 1))))}
+              aria-label="Tastverhältnis über CCR2 einstellen"/>
             <div className="range-labels"><span>0 %</span><span>100 %</span></div>
+            <p className="field-hint">CCR2 lässt sich nur in ganzen Registerschritten ändern. Das angezeigte Tastverhältnis kann deshalb vom eingestellten Prozentwert abweichen.</p>
           </div>
-          <div className="preset-buttons">
-            <button type="button" className="button button-ghost" onClick={() => applyPreset("divider")}>↺ PSC = 3 · ÷4</button>
-            <button type="button" className="button button-ghost" onClick={() => applyPreset("steps")}>↺ 10 Ticks · 30 %</button>
-            <button type="button" className="button button-ghost" onClick={() => applyPreset("blink")}>↺ 1 Hz · Blinken</button>
-            <button type="button" className="button button-ghost" onClick={() => applyPreset("dim")}>↺ 1 kHz · Dimmen</button>
+          <div className="preset-buttons" aria-label="Timer-Voreinstellungen">
+            <button type="button" className="button button-ghost" onClick={() => applyPreset("divider")}>Voreinstellung: PSC = 3 (÷4)</button>
+            <button type="button" className="button button-ghost" onClick={() => applyPreset("steps")}>Voreinstellung: 10 Zählschritte · 30 %</button>
+            <button type="button" className="button button-ghost" onClick={() => applyPreset("blink")}>Voreinstellung: 1 Hz · Blinken</button>
+            <button type="button" className="button button-ghost" onClick={() => applyPreset("dim")}>Voreinstellung: 1 kHz · Dimmen</button>
           </div>
+          <p className="preset-effects">Alle Voreinstellungen laden <strong>TIM1, das RCC-Praktikumsprofil (168 MHz), PSC, ARR, CCR2 und den Wiedergabemodus</strong> neu. Die Wiedergabe stoppt; CNT, Prescaler-Phase und CNT-Rücksprünge werden auf null gesetzt.</p>
+          {savedBeforePreset && <button type="button" className="button button-secondary preset-restore" onClick={restorePresetConfiguration}>↶ Vorherige Konfiguration wiederherstellen</button>}
+          {presetStatus && <p className="preset-status" role="status">{presetStatus}</p>}
           {error && <p className="error" role="alert">{error}</p>}
         </section>
 
@@ -243,8 +284,8 @@ export default function TimerPwmDemo() {
           <section className="panel simulator-panel" aria-labelledby="sim-title">
             <div className="panel-header">
               <div className="eyebrow">02 / ZÄHLWERK</div>
-              <h2 id="sim-title">Live-Zustand des Counters</h2>
-              <p>Der Timer wird hier didaktisch verlangsamt. Du kannst sowohl <strong>TIMxCLK-Eingangstakte</strong> im Prescaler-Labor als auch komplette <strong>CNT-Ticks</strong> weiterschalten. Die Browser-Wiedergabe läuft nicht in Echtzeit.</p>
+              <h2 id="sim-title">Aktueller CNT-Zählerstand</h2>
+              <p>Der Timer wird hier didaktisch verlangsamt. Du kannst sowohl einzelne <strong>Timer-Eingangstaktimpulse</strong> im Prescaler-Labor als auch vollständige <strong>CNT-Zählschritte</strong> weiterschalten. Die Animation ist unabhängig von der realen Timerfrequenz.</p>
             </div>
             <div className="counter-display">
               <div>
@@ -254,7 +295,7 @@ export default function TimerPwmDemo() {
               </div>
               <div className="counter-status">
                 <span className={active ? "state-indicator state-active" : "state-indicator state-inactive"} aria-hidden="true" />
-                <strong>{active ? "OCxREF = 1" : "OCxREF = 0"}</strong>
+                <strong>{active ? "OC2REF = 1" : "OC2REF = 0"}</strong>
                 <small>{active ? "CNT < CCR2" : "CNT ≥ CCR2"}</small>
               </div>
             </div>
@@ -263,25 +304,25 @@ export default function TimerPwmDemo() {
               <i style={{ left: Math.min(100, ccr / (arr + 1) * 100) + "%" }} title="CCR2-Schwelle" />
             </div>
             <div className="counter-extras">
-              <span>Überläufe: <strong>{counter.overflows.toLocaleString("de-DE")}</strong></span>
-              <span>Nächster Überlauf: <strong>{overflowDistance?.toLocaleString("de-DE") ?? "–"} Tick(s)</strong></span>
+              <span>CNT-Rücksprünge (ARR → 0): <strong>{counter.overflows.toLocaleString("de-DE")}</strong></span>
+              <span>Bis zum nächsten Rücksprung: <strong>{overflowDistance?.toLocaleString("de-DE") ?? "–"} CNT-Zählschritte</strong></span>
             </div>
 
             <div className="playback-control">
               <label htmlFor="playback">Wiedergabe</label>
               <select id="playback" value={playback} onChange={(event) => setPlayback(event.target.value as Playback)}>
-                <option value="ticks">Tickweise · 4 Ticks/s</option>
-                <option value="period">Zeitraffer · ca. 5 s/Periode</option>
+                <option value="ticks">Animation · 4 CNT-Zählschritte/s</option>
+                <option value="period">Animation · ca. 5 s je dargestellter PWM-Periode</option>
               </select>
             </div>
             <div className="transport-buttons">
               <button type="button" className="button button-primary" onClick={() => setPlaying((before) => !before)} disabled={!result}>
                 {playing ? "❚❚ Pause" : "▶ Start"}
               </button>
-              <button type="button" className="button button-ghost" onClick={() => advance(1)} disabled={!result}>+1 Tick</button>
-              <button type="button" className="button button-ghost" onClick={() => advance(compareDistance ?? 0)} disabled={compareDistance === null} title={compareDistance === null ? "Bei 0 % oder 100 % gibt es keinen Compare-Flankenwechsel." : "Zum nächsten CNT=CCR2 springen"}>→ Compare</button>
-              <button type="button" className="button button-ghost" onClick={() => advance(overflowDistance ?? 0)} disabled={overflowDistance === null}>↻ Überlauf</button>
-              <button type="button" className="button button-ghost" onClick={resetCounter}>Reset</button>
+              <button type="button" className="button button-ghost" onClick={() => advance(1)} disabled={!result}>+1 CNT-Zählschritt</button>
+              <button type="button" className="button button-ghost" onClick={() => advance(compareDistance ?? 0)} disabled={compareDistance === null} title={compareDistance === null ? "Keine Abschaltflanke: bei CCR2 = 0 bleibt OC2REF inaktiv, bei CCR2 > ARR bleibt es aktiv." : "Bis CNT = CCR2 weiterschalten (OC2REF wird inaktiv)."}>→ Zur Abschaltschwelle</button>
+              <button type="button" className="button button-ghost" onClick={() => advance(overflowDistance ?? 0)} disabled={overflowDistance === null}>↻ Zum Rücksprung (ARR → 0)</button>
+              <button type="button" className="button button-ghost" onClick={resetCounter}>CNT zurücksetzen</button>
             </div>
             <p className="observation" aria-label="Erklärung des aktuellen Zählerzustands">{observation}</p>
           </section>
@@ -290,10 +331,10 @@ export default function TimerPwmDemo() {
             <div className="panel-header">
               <div className="eyebrow">03 / SYNCHRONISIERTES ZEITDIAGRAMM</div>
               <h2>CNT, CCR2 und PWM Mode 1</h2>
-              <p>Die orange Compare-Linie markiert den Umschaltwert. Der weiße Cursor zeigt den aktuellen Zählschritt.</p>
+              <p>Die orange Linie markiert die CCR2-Vergleichsschwelle, sofern ein Abschaltwechsel innerhalb der Periode stattfindet. Der weiße Cursor zeigt den aktuellen CNT-Zählschritt.</p>
             </div>
             {result ? <Waveform arr={arr} ccr={ccr} cnt={counter.cnt} periodSeconds={result.periodSeconds}/> : <p>Korrigiere die Registerwerte, um das Signal zu sehen.</p>}
-            <div className="wave-legend"><span className="legend-dot"/> Logisch aktives PWM-Referenzsignal <span className="wave-secondary">· Bei OCPolarity LOW liegt währenddessen physikalisch LOW am Ausgang an.</span></div>
+            <div className="wave-legend"><span className="legend-dot"/> Intern aktives PWM-Referenzsignal OC2REF <span className="wave-secondary">· Bei OCPolarity LOW liegt währenddessen physikalisch LOW am Ausgang an.</span></div>
           </section>
 
           <section className="panel">
@@ -302,8 +343,8 @@ export default function TimerPwmDemo() {
               <h2>Vom Timer-Takt zur PWM-Frequenz</h2>
             </div>
             <div className="metrics">
-              <div className="metric"><span>Timer-Eingang</span><strong>{(timerClockHz / 1e6).toLocaleString("de-DE", { maximumFractionDigits: 5 })} <small>MHz</small></strong></div>
-              <div className="metric"><span>Zähltakt</span><strong>{result ? formatFrequency(result.counterHz) : "–"}</strong></div>
+              <div className="metric"><span>Timer-Eingangstaktfrequenz</span><strong>{(timerClockHz / 1e6).toLocaleString("de-DE", { maximumFractionDigits: 5 })} <small>MHz</small></strong></div>
+              <div className="metric"><span>CNT-Zähltaktfrequenz</span><strong>{result ? formatFrequency(result.counterHz) : "–"}</strong></div>
               <div className="metric featured"><span>PWM-Frequenz</span><strong>{result ? formatFrequency(result.pwmHz) : "–"}</strong></div>
               <div className="metric"><span>Periodendauer</span><strong>{result ? formatPeriod(result.periodSeconds) : "–"}</strong></div>
             </div>
