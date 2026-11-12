@@ -478,3 +478,80 @@ test("Sprungziele bleiben bei Desktop und 320 px unterhalb des Sticky Headers si
     }
   }
 });
+
+test("DOT-Signalweg: interne Referenz, PE11-Pegel und low-aktive LED bleiben synchron", async ({ page }, info) => {
+  await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
+  const details = page.getByTestId("dot-signal-path");
+  const summary = details.locator("summary");
+  await expect(details).not.toHaveAttribute("open", "");
+  await summary.click();
+  await expect(details).toHaveAttribute("open", "");
+  await expect(details.getByTestId("path-oc2ref")).toContainText("OC2REF = 1");
+  await expect(details.getByTestId("path-pe11")).toContainText("PE11: LOW (0)");
+  await expect(details.getByTestId("path-dot")).toContainText("DOT: AN");
+  await expect(details.locator(".dot-path-row-active")).toContainText("LOW (0)");
+  await expect(details).toContainText("CC2E / MOE");
+  await expect(details).toContainText("kein verifizierter elektrischer Schaltplan");
+  await details.scrollIntoViewIfNeeded();
+  await capture(page, info.project.name, "dot-path-tim1-on");
+
+  const counterStep = page.locator(".transport-buttons")
+    .getByRole("button", { name: "+1 CNT-Zählschritt" });
+  for (let i = 0; i < 3; i++) await counterStep.click();
+  await expect(page.locator(".counter-number")).toHaveText("3");
+  await expect(details).toHaveAttribute("open", "");
+  await expect(details.getByTestId("path-oc2ref")).toContainText("OC2REF = 0");
+  await expect(details.getByTestId("path-pe11")).toContainText("PE11: HIGH (1)");
+  await expect(details.getByTestId("path-dot")).toContainText("DOT: AUS");
+  await expect(details.locator(".dot-path-row-active")).toContainText("HIGH (1)");
+  await details.scrollIntoViewIfNeeded();
+  await capture(page, info.project.name, "dot-path-tim1-off");
+
+  await page.locator(".transport-buttons").getByRole("button", { name: /Zum Rücksprung/ }).click();
+  await expect(page.locator(".counter-number")).toHaveText("0");
+  await expect(details.getByTestId("path-dot")).toContainText("DOT: AN");
+
+  // Boundary cases: no active step at CCR2=0 and always active when CCR2>ARR.
+  await page.locator("#ccr").fill("0");
+  await expect(details.getByTestId("path-dot")).toContainText("DOT: AUS");
+  await expect(details.getByTestId("path-pe11")).toContainText("PE11: HIGH (1)");
+  await page.locator("#ccr").fill("12");
+  await expect(details.getByTestId("path-dot")).toContainText("DOT: AN");
+  await expect(details.getByTestId("path-pe11")).toContainText("PE11: LOW (0)");
+
+  await page.locator("#timer").selectOption("TIM2");
+  await expect(details.getByTestId("path-oc2ref")).toContainText("OC2REF = 1");
+  await expect(details.getByTestId("path-pe11")).toContainText("PE11: nicht verbunden");
+  await expect(details.getByTestId("path-dot")).toContainText("DOT: nicht verbunden");
+  await expect(details.getByTestId("path-current-state")).toContainText("keine Verbindung");
+  await expect(page.locator(".led-visual").first().getByRole("img")).toHaveAttribute(
+    "aria-label", "LED momentan ausgeschaltet");
+  await details.scrollIntoViewIfNeeded();
+  await capture(page, info.project.name, "dot-path-tim2-disconnected");
+
+  // A native details/summary is operable with a keyboard, no separate button needed.
+  await summary.focus();
+  await page.keyboard.press("Enter");
+  await expect(details).not.toHaveAttribute("open", "");
+});
+
+test("DOT-Signalweg ist mobil aufklappbar ohne horizontale Überbreite", async ({ page }, info) => {
+  await page.goto("/PES-Demos/#/timer-pwm");
+  await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
+  const details = page.getByTestId("dot-signal-path");
+  await details.locator("summary").click();
+  for (const width of [320, 360, 393]) {
+    await page.setViewportSize({ width, height: 800 });
+    await expect(details.getByTestId("path-dot")).toBeVisible();
+    const dimensions = await page.evaluate(() => ({
+      documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      stageOverflow: [...document.querySelectorAll(".dot-path-stage")]
+        .map(el => el.scrollWidth - el.clientWidth),
+    }));
+    expect(dimensions.documentOverflow, "Dokument bei " + width + "px").toBeLessThanOrEqual(2);
+    expect(Math.max(...dimensions.stageOverflow), "Signalweg-Knoten bei " + width + "px").toBeLessThanOrEqual(2);
+    await details.scrollIntoViewIfNeeded();
+    await capture(page, info.project.name, "dot-path-mobile-" + width);
+  }
+});
