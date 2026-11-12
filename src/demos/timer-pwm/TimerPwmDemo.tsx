@@ -3,6 +3,7 @@ import Waveform from "./components/Waveform";
 import ClockTree from "./components/ClockTree";
 import PrescalerPipeline from "./components/PrescalerPipeline";
 import GuidedTimerLesson from "./components/GuidedTimerLesson";
+import DotSignalPath from "./components/DotSignalPath";
 import {
   advanceTimerClocks, INITIAL_CLOCKED_COUNTER, type ClockedCounterState,
 } from "./model/prescaler";
@@ -455,8 +456,9 @@ export default function TimerPwmDemo() {
           </section>
 
           <section className="panel physical-panel">
-            <div>
-              <div className="eyebrow">05 / HARDWAREBEZUG</div>
+            <div className="physical-summary">
+              <div>
+                <div className="eyebrow">05 / HARDWAREBEZUG</div>
               <h2>Virtuelles DOT · PE11</h2>
               <p>{pe11Connected
                 ? "TIM1_CH2 → AF1 → PE11. Die LED ist low-aktiv. Wir setzen eine aktivierte Anzeigenstelle und freigeschalteten TIM1-Ausgang voraus (CC2E/MOE)."
@@ -477,6 +479,11 @@ export default function TimerPwmDemo() {
                 <span>Mittelwert</span>
               </div>
             </div>
+            </div>
+            <DotSignalPath
+              timer={timer} cnt={counter.cnt} arr={arr} psc={psc} ccr={ccr}
+              oc2refActive={active}
+            />
           </section>
 
           <section className="panel">
