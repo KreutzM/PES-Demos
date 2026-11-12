@@ -400,3 +400,22 @@ button:disabled { opacity:.45; cursor:not-allowed; }
 .guided-navigation .button-primary:disabled {
   background:#28464c; color:#859ca6; border-color:#395461; opacity:1;
 }
+
+/* PR #10 review: keep first prediction reachable on small screens. */
+.guided-reset-notice { margin:-12px 0 14px; color:#a9c0ce; font-size:12px; line-height:1.5; }
+.guided-question h3 { scroll-margin-top:92px; }
+.guided-question h3:focus { outline:none; }
+.guided-question h3:focus-visible { outline:2px solid #65dec9; outline-offset:4px; }
+.guided-pulses:empty { display:none; }
+@media(max-width:760px) {
+  .guided-mode { padding-top:14px; }
+  .guided-mode .demo-heading { padding:2px 0; }
+  .guided-mode .demo-heading h1 { font-size:clamp(28px,8vw,39px); margin:4px 0; }
+  .guided-mode .demo-heading .lead,
+  .guided-mode .version-pill,
+  .guided-mode .demo-heading .eyebrow { display:none; }
+  .guided-mode .learning-mode-switch { margin:9px 0 12px; }
+  .guided-heading h2 { margin:5px 0; }
+  .guided-heading p { line-height:1.45; }
+  .guided-progress { margin:12px 0; }
+}

@@ -1,5 +1,6 @@
+import { useEffect, useRef } from "react";
 import type { ClockedCounterState } from "../model/prescaler";
-import type { TimerResult } from "../model/timer";
+import { pwmActive, type TimerResult } from "../model/timer";
 import Waveform from "./Waveform";
 
 interface GuidedTimerLessonProps {
@@ -21,14 +22,14 @@ interface GuidedTimerLessonProps {
 
 const lessons = [
   {
-    title: "Warum teilt PSC = 3 durch vier?",
+    title: "Wie wirkt PSC = 3 auf den Zähler?",
     question: "Nach wie vielen Timer-Eingangstaktimpulsen steigt CNT von 0 auf 1?",
     options: [{ value: "1", label: "1 Impuls" }, { value: "3", label: "3 Impulse" }, { value: "4", label: "4 Impulse" }],
     correct: "4",
     explanation: "PSC = 3 beschreibt den Endwert der Prescaler-Zählung 0, 1, 2, 3. Erst nach vier Eingangstaktimpulsen entsteht ein CNT-Zählschritt.",
   },
   {
-    title: "Warum zählt ARR = 9 zehn Schritte?",
+    title: "Was passiert am Zählerendwert ARR = 9?",
     question: "Welcher CNT-Zählerstand folgt direkt auf CNT = 9?",
     options: [{ value: "0", label: "0" }, { value: "9", label: "9" }, { value: "10", label: "10" }],
     correct: "0",
@@ -60,13 +61,25 @@ export default function GuidedTimerLesson({
   onGoToStep, onOpenFreeLab,
 }: GuidedTimerLessonProps) {
   const lesson = lessons[step];
+  const isPwmActive = pwmActive(state.cnt, ccr);
   const finished = step === 0 ? state.cnt >= 1
     : step === 1 ? state.overflows > 0
-    : step === 2 ? state.cnt === ccr
+    : step === 2 ? !isPwmActive
     : psc === 7 && arr === 19;
-  const comparison = step === 2 ? state.cnt >= ccr : false;
   const actionAllowed = answer !== "";
   const match = answer === lesson.correct;
+  const questionRef = useRef<HTMLHeadingElement>(null);
+  const firstRender = useRef(true);
+
+  useEffect(() => {
+    const initial = firstRender.current;
+    firstRender.current = false;
+    // On small screens start at the first question; after a step change
+    // return focus/scroll from the old footer to the new question.
+    if (initial && window.innerWidth > 760) return;
+    questionRef.current?.focus({ preventScroll: true });
+    questionRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
+  }, [step]);
 
   return (
     <section className="panel guided-lesson" aria-labelledby="guided-title">
@@ -74,11 +87,8 @@ export default function GuidedTimerLesson({
         <div>
           <div className="eyebrow">GEFÜHRTER EINSTIEG · EXPERIMENT {step + 1} / 4</div>
           <h2 id="guided-title">{lesson.title}</h2>
-          <p>Alle Experimente nutzen TIM1 mit dem RCC-Praktikumsprofil. Anfangswerte: PSC = 3, ARR = 9, CCR2 = 3. Die Browser-Schritte sind kein Echtzeitbetrieb.</p>
+          <p>TIM1 · RCC-Praktikumsprofil · Startwerte PSC = 3, ARR = 9, CCR2 = 3. Die Simulation ist nicht in Echtzeit.</p>
         </div>
-        <button type="button" className="button button-ghost" onClick={onOpenFreeLab}>
-          Freies Labor öffnen
-        </button>
       </header>
 
       <div className="guided-progress" aria-label={"Experiment " + (step + 1) + " von 4"}>
@@ -91,11 +101,12 @@ export default function GuidedTimerLesson({
           </button>
         ))}
       </div>
+      <p className="guided-reset-notice">Beim Wechsel des Experiments beginnen Antwort und Zähler wieder bei null.</p>
 
       <div className="guided-workspace">
         <div className="guided-question">
           <div className="guided-section-label">1 · Vorhersagen</div>
-          <h3>{lesson.question}</h3>
+          <h3 ref={questionRef} tabIndex={-1} data-testid="guided-question">{lesson.question}</h3>
           <fieldset className="guided-answers" disabled={finished}>
             <legend className="visually-hidden">Wähle deine Vermutung</legend>
             {lesson.options.map((option) => (
@@ -119,19 +130,19 @@ export default function GuidedTimerLesson({
             <>
               <div className="guided-state" aria-live="polite">
                 <div><span>PSC-Registerwert</span><strong>3</strong></div>
-                <div><span>Eingangstakte seit letztem CNT-Zählschritt</span><strong>{state.prescalerPhase} / 4</strong></div>
+                <div><span>Verarbeitete Eingangstaktimpulse</span><strong data-testid="guided-impulses">{state.cnt > 0 ? 4 : state.prescalerPhase}</strong></div>
                 <div><span>CNT</span><strong data-testid="guided-cnt">{state.cnt}</strong></div>
               </div>
-              <div className="guided-pulses" aria-label={state.prescalerPhase + " von 4 Eingangstaktimpulsen verarbeitet"}>
-                {[1, 2, 3, 4].map((n) => (
-                  <span key={n} className={n <= state.prescalerPhase ? "processed" : ""}>{n}</span>
+              <div className="guided-pulses" aria-label={"Bisher verarbeitete Eingangstaktimpulse: " + (state.cnt > 0 ? 4 : state.prescalerPhase)}>
+                {Array.from({ length: state.cnt > 0 ? 4 : state.prescalerPhase }, (_, index) => (
+                  <span className="processed" key={index + 1}>{index + 1}</span>
                 ))}
               </div>
               <button type="button" className="button button-primary" disabled={!actionAllowed || finished}
                 onClick={onInputClock}>+1 Timer-Eingangstaktimpuls</button>
               <p className="guided-observation">
-                {finished ? "Nach dem vierten Eingangstaktimpuls: CNT = 1. Der Prescaler beginnt wieder bei 0."
-                  : "Nach " + state.prescalerPhase + " von 4 Eingangstakten bleibt CNT = 0."}
+                {finished ? "4. Eingangstaktimpuls → CNT +1! Der Prescaler beginnt wieder bei 0."
+                  : "Verarbeitete Impulse: " + state.prescalerPhase + ". CNT bleibt bislang bei 0."}
               </p>
             </>
           )}
@@ -152,7 +163,7 @@ export default function GuidedTimerLesson({
               </div>
               <p className="guided-observation">
                 {finished ? "Rücksprung beobachtet: CNT wechselte von 9 auf 0; die nächste Periode beginnt."
-                  : state.cnt === 9 ? "CNT steht am oberen Endwert ARR = 9. Ein weiterer Schritt führt zurück zu 0."
+                  : state.cnt === 9 ? "CNT steht bei ARR = 9. Was passiert beim nächsten CNT-Zählschritt?"
                     : "Springe zunächst zum letzten Zählerstand 9 und schalte anschließend einen Zählschritt weiter."}
               </p>
             </>
@@ -162,17 +173,17 @@ export default function GuidedTimerLesson({
               <div className="guided-state" aria-live="polite">
                 <div><span>CCR2</span><strong>3</strong></div>
                 <div><span>CNT</span><strong data-testid="guided-cnt">{state.cnt}</strong></div>
-                <div><span>OC2REF (intern)</span><strong data-testid="guided-oc2ref">{comparison ? "0 · inaktiv" : "1 · aktiv"}</strong></div>
+                <div><span>OC2REF (intern)</span><strong data-testid="guided-oc2ref">{isPwmActive ? "1 · aktiv" : "0 · inaktiv"}</strong></div>
               </div>
               <button type="button" className="button button-primary"
                 disabled={!actionAllowed || finished}
-                onClick={() => onCounterStep(ccr - state.cnt)}>Bis CNT = CCR2</button>
-              <div className="guided-waveform">
+                onClick={() => onCounterStep(1)}>+1 CNT-Zählschritt</button>
+              {finished && <div className="guided-waveform">
                 <Waveform arr={arr} ccr={ccr} cnt={state.cnt} periodSeconds={result.periodSeconds} />
-              </div>
+              </div>}
               <p className="guided-observation">
                 {finished ? "CNT = CCR2 = 3: OC2REF wird inaktiv. Drei von zehn Zählschritten waren aktiv, also 30 %."
-                  : "OC2REF ist aktiv, solange CNT < 3. Beobachte den Übergang am Vergleichswert."}
+                  : "Beobachte, wie sich CNT und OC2REF bei jedem einzelnen CNT-Zählschritt verändern."}
               </p>
             </>
           )}

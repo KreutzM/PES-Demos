@@ -253,7 +253,7 @@ export default function TimerPwmDemo() {
   ].join("\n");
 
   return (
-    <main id="inhalt" className="container demo-main">
+    <main id="inhalt" className={"container demo-main" + (lessonView === "guided" ? " guided-mode" : "")}>
       <a className="breadcrumb" href="#/">← Alle Demos</a>
       <div className="demo-heading">
         <div>
