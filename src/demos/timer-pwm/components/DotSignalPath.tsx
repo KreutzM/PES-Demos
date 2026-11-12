@@ -52,11 +52,11 @@ export default function DotSignalPath({
             <span className="dot-path-stage-label">2 · Ausgangsstufe</span>
             <strong>OCPolarity LOW</strong>
             <small>Invertiert den OC2REF-Pegel</small>
-            <span className="dot-path-stage-description">CC2E / MOE als freigegeben angenommen</span>
+            <span className="dot-path-stage-description">{connected ? "CC2E und MOE für TIM1 als freigegeben angenommen" : "Interner TIM2-Kanal; kein PE11-Ausgang"}</span>
           </div>
           <span className="dot-path-arrow" aria-hidden="true">→</span>
           <div className={"dot-path-stage" + (connected ? "" : " dot-path-disconnected")} data-testid="path-pe11">
-            <span className="dot-path-stage-label">3 · TIM1_CH2 / AF1</span>
+            <span className="dot-path-stage-label">3 · {connected ? "TIM1_CH2 / AF1" : "PE11-Anschluss"}</span>
             <strong>PE11: {pe11Level}</strong>
             <small>{connected ? "physikalischer Pinpegel im Modell" : "TIM2_CH2 liegt nicht auf PE11"}</small>
           </div>
