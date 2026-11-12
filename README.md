@@ -87,3 +87,11 @@ Der GitHub-Runner bringt **Google Chrome Stable** bereits mit. Der Playwright-Jo
 - **Regressionstests:** Neue Unit-Tests und Playwright-End-to-end-Szenarien prüfen ARR-/CCR2-Unabhängigkeit, PWM-Grenzfälle, Reset und Preset-Rückkehr.
 
 Diese Anpassungen betreffen die bestehende Laboransicht. Der geplante geführte Lernmodus folgt als separates Issue/PR.
+
+## Geführter Timer-Einstieg (Issue #9)
+
+Der Timer/PWM-Demonstrator startet mit einem **geführten Einstiegsmodus**. Vier kurze Experimente behandeln in der Reihenfolge **Prescaler (PSC)**, **periodischen CNT-Rücksprung (ARR)**, **internes PWM-Referenzsignal OC2REF (CCR2)** und **PWM-Frequenz**. Eine Antwortauswahl regt jeweils zur Vorhersage an; nach der anschließenden Simulation folgt die Beobachtung und eine Erklärung.
+
+Die Lernkonfiguration verwendet **TIM1, Standard-RCC, PSC=3, ARR=9, CCR2=3**. Die Simulation selbst verwendet dieselbe Timer- und Prescalerberechnung wie das freie Labor (keine zweite Hardware-Engine). Ein Wechsel zum **freien Labor** stellt dessen zuvor eingestellte Register und das RCC-Profil wieder her. Im freien Labor bleiben RCC-Taktbaum, Prescaler-Pipeline, Register-/PWM-Steuerung, LED-Modell, Zeitdiagramm und HAL-Ausschnitt erhalten.
+
+Der geführte Modus ist ein didaktisches Angebot, keine Speicherung oder Benotung persönlicher Lernfortschritte. Abgebildet sind weiterhin die im freien Labor dokumentierten Hardwarevereinfachungen.
