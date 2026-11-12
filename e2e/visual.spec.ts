@@ -22,7 +22,7 @@ test("Landingpage und Timer-Labor sind erreichbar und sichtbar", async ({ page }
 
   await page.getByRole("link", { name: /Timer & PWM entdecken/ }).click();
   await expect(page.getByRole("heading", { name: "Timer & PWM" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /Warum teilt PSC = 3/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Wie wirkt PSC = 3 auf den Zähler/ })).toBeVisible();
   await page.getByRole("button", { name: "Freies Labor", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Woher bekommt der Timer seinen Takt?" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Warum immer „+ 1“?" })).toBeVisible();
@@ -205,9 +205,11 @@ test("PWM-Grenzen: kein falscher 100-%-Wert, keine Abschaltmarkierung ohne Ereig
 
 test("Geführter Einstieg: PSC, ARR, CCR2, Frequenz als Vorhersage–Experiment–Erklärung", async ({ page }, info) => {
   await page.goto("/PES-Demos/#/timer-pwm");
-  await expect(page.getByRole("heading", { name: /Warum teilt PSC = 3/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Wie wirkt PSC = 3 auf den Zähler/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Woher bekommt der Timer seinen Takt/ })).toHaveCount(0);
   await expect(page.getByTestId("guided-cnt")).toHaveText("0");
+  await expect(page.getByTestId("guided-impulses")).toHaveText("0");
+  await expect(page.locator(".guided-pulses span")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Timer-Eingangstaktimpuls/ })).toBeDisabled();
   await capture(page, info.project.name, "guided-psc-start");
 
@@ -216,18 +218,24 @@ test("Geführter Einstieg: PSC, ARR, CCR2, Frequenz als Vorhersage–Experiment�
   for (let i = 1; i <= 3; i++) {
     await inputStep.click();
     await expect(page.getByTestId("guided-cnt")).toHaveText("0");
-    await expect(page.locator(".guided-state")).toContainText(i + " / 4");
+    await expect(page.getByTestId("guided-impulses")).toHaveText(String(i));
+    await expect(page.locator(".guided-pulses span")).toHaveCount(i);
   }
   await inputStep.click();
   await expect(page.getByTestId("guided-cnt")).toHaveText("1");
+  await expect(page.getByTestId("guided-impulses")).toHaveText("4");
+  await expect(page.locator(".guided-pulses span")).toHaveCount(4);
+  await expect(page.locator(".guided-observation")).toContainText("4. Eingangstaktimpuls");
   await expect(page.locator(".guided-result")).toContainText("Deine Vorhersage war richtig");
   await capture(page, info.project.name, "guided-psc-observed");
   await page.getByRole("button", { name: /Nächstes Experiment/ }).click();
 
-  await expect(page.getByRole("heading", { name: /Warum zählt ARR = 9/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Was passiert am Zählerendwert ARR = 9/ })).toBeVisible();
+  await expect(page.getByTestId("guided-question")).toBeFocused();
   await page.getByRole("radio", { name: "0", exact: true }).check();
   await page.getByRole("button", { name: "Bis CNT = 9" }).click();
   await expect(page.getByTestId("guided-cnt")).toHaveText("9");
+  await expect(page.locator(".guided-observation")).not.toContainText("zurück zu 0");
   await page.getByRole("button", { name: "+1 CNT-Zählschritt" }).click();
   await expect(page.getByTestId("guided-cnt")).toHaveText("0");
   await expect(page.getByTestId("guided-wraps")).toHaveText("1");
@@ -237,9 +245,19 @@ test("Geführter Einstieg: PSC, ARR, CCR2, Frequenz als Vorhersage–Experiment�
   await expect(page.getByRole("heading", { name: "Wann wird OC2REF inaktiv?" })).toBeVisible();
   await page.getByRole("radio", { name: "CNT = 3" }).check();
   await expect(page.getByTestId("guided-oc2ref")).toContainText("1 · aktiv");
-  await page.getByRole("button", { name: "Bis CNT = CCR2" }).click();
+  await expect(page.locator(".guided-waveform")).toHaveCount(0);
+  const cntStep = page.getByRole("button", { name: "+1 CNT-Zählschritt" });
+  await cntStep.click();
+  await expect(page.getByTestId("guided-cnt")).toHaveText("1");
+  await expect(page.getByTestId("guided-oc2ref")).toContainText("1 · aktiv");
+  await expect(page.locator(".guided-waveform")).toHaveCount(0);
+  await cntStep.click();
+  await expect(page.getByTestId("guided-cnt")).toHaveText("2");
+  await expect(page.locator(".guided-waveform")).toHaveCount(0);
+  await cntStep.click();
   await expect(page.getByTestId("guided-cnt")).toHaveText("3");
   await expect(page.getByTestId("guided-oc2ref")).toContainText("0 · inaktiv");
+  await expect(page.locator(".guided-waveform")).toBeVisible();
   await expect(page.locator(".guided-result")).toContainText("30 %");
   await capture(page, info.project.name, "guided-compare-observed");
   await page.getByRole("button", { name: /Nächstes Experiment/ }).click();
@@ -266,7 +284,7 @@ test("Geführter Modus erhält die vorherige Konfiguration des freien Labors", a
   await page.locator("#ccr").fill("4");
   await page.locator(".clock-checkbox input").check();
   await page.getByRole("button", { name: "Geführter Einstieg", exact: true }).click();
-  await expect(page.getByRole("heading", { name: /Warum teilt PSC = 3/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Wie wirkt PSC = 3 auf den Zähler/ })).toBeVisible();
   await expect(page.locator("#psc")).toHaveCount(0);
   await page.getByRole("button", { name: "4. Frequenz" }).click();
   await expect(page.getByTestId("guided-frequency")).toHaveText("4,2 MHz");
@@ -276,4 +294,51 @@ test("Geführter Modus erhält die vorherige Konfiguration des freien Labors", a
   await expect(page.locator("#arr")).toHaveValue("19");
   await expect(page.locator("#ccr")).toHaveValue("4");
   await expect(page.locator(".clock-checkbox input")).toBeChecked();
+});
+
+test("Geführter Einstieg verrät Lösungen nicht vorab und erklärt auch eine falsche Vorhersage", async ({ page }) => {
+  await page.goto("/PES-Demos/#/timer-pwm");
+  await expect(page.getByRole("heading", { name: /Wie wirkt PSC = 3/ })).toBeVisible();
+  await expect(page.getByTestId("guided-impulses")).toHaveText("0");
+  await expect(page.locator(".guided-pulses span")).toHaveCount(0);
+  await expect(page.locator(".guided-result")).toContainText("Die Erklärung erscheint");
+  await expect(page.locator(".guided-result")).not.toContainText("vier Eingangstaktimpulsen");
+
+  await page.getByRole("radio", { name: "1 Impuls" }).check();
+  for (let i = 0; i < 4; i++) {
+    await page.getByRole("button", { name: "+1 Timer-Eingangstaktimpuls" }).click();
+  }
+  await expect(page.locator(".guided-result")).toContainText("Deine Vorhersage war anders");
+  await expect(page.locator(".guided-result")).toContainText("vier Eingangstaktimpulsen");
+
+  // Navigation intentionally starts an experiment over, as signposted.
+  await expect(page.locator(".guided-reset-notice")).toContainText("Antwort und Zähler");
+  await page.getByRole("button", { name: "2. ARR" }).click();
+  await expect(page.getByTestId("guided-question")).toBeFocused();
+  await page.getByRole("button", { name: "1. PSC" }).click();
+  await expect(page.getByTestId("guided-question")).toBeFocused();
+  await expect(page.getByTestId("guided-impulses")).toHaveText("0");
+  await expect(page.getByRole("radio", { name: "1 Impuls" })).not.toBeChecked();
+
+  await page.getByRole("button", { name: "3. CCR2" }).click();
+  await expect(page.getByTestId("guided-question")).toBeFocused();
+  await expect(page.locator(".guided-waveform")).toHaveCount(0);
+  await expect(page.locator(".guided-observation")).not.toContainText("CNT < 3");
+  await expect(page.locator(".guided-result")).not.toContainText("30 %");
+});
+
+test("Geführter Einstieg bleibt bei 360 px ohne horizontales Scrollen, Frage im Blick", async ({ page }, info) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.goto("/PES-Demos/#/timer-pwm");
+  await expect(page.getByTestId("guided-question")).toBeInViewport();
+  await expect(page.getByRole("radio", { name: "4 Impulse" })).toBeInViewport();
+  let horizontal = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(horizontal).toBeLessThanOrEqual(2);
+  await capture(page, info.project.name, "guided-360-start");
+
+  await page.getByRole("button", { name: "3. CCR2" }).click();
+  await expect(page.getByTestId("guided-question")).toBeFocused();
+  await expect(page.getByTestId("guided-question")).toBeInViewport();
+  horizontal = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(horizontal).toBeLessThanOrEqual(2);
 });
